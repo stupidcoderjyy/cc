@@ -4,7 +4,7 @@ include(GoogleTest)
 set(TARGET cc_test)
 
 add_executable(${TARGET}
-        test_gtest.cpp
+        test_nfa.cpp
 )
 
 target_link_libraries(${TARGET} PRIVATE
