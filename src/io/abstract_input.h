@@ -26,25 +26,24 @@ public:
 
     int Approach(int ch);
     int Approach(int ch1, int ch2);
-    int Approach(int ch1, int ch2, int ch3) ;
-    int Approach(const std::initializer_list<int> &list);
+    int Approach(int ch1, int ch2, int ch3);
+    int Approach(const std::initializer_list<int>& list);
     int Find(int ch);
     int Find(int ch1, int ch2);
     int Find(int ch1, int ch2, int ch3);
-    int Find(const std::initializer_list<int> &list);
+    int Find(const std::initializer_list<int>& list);
     int Skip(int ch);
     int Skip(int ch1, int ch2);
     int Skip(int ch1, int ch2, int ch3);
-    int Skip(const std::initializer_list<int> &list);
+    int Skip(const std::initializer_list<int>& list);
+
 protected:
     std::array<bool, 128> bit_clazz_{};
+
 private:
     void PrepareBitClazz(const std::initializer_list<int>& list);
 };
 
+}  // namespace cc
 
-}
-
-
-
-#endif //RTFS2D_ABSTRACT_INPUT_H
+#endif  //RTFS2D_ABSTRACT_INPUT_H

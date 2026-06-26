@@ -11,8 +11,7 @@
 
 namespace cc {
 
-StringByteReader::StringByteReader(std::string utf8_data)
-    : data_(std::move(utf8_data)){}
+StringByteReader::StringByteReader(std::string utf8_data) : data_(std::move(utf8_data)) {}
 
 int StringByteReader::Read(char* dest, int start, int length) {
     if (dest == nullptr || start < 0 || length <= 0) {

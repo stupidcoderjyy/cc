@@ -51,5 +51,4 @@ std::string NFANode::ToString() const {
     return oss.str();
 }
 
-}
-
+}  // namespace cc

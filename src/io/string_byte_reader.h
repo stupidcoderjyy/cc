@@ -36,4 +36,4 @@ private:
 
 }  // namespace cc
 
-#endif //RTFS2D_STRING_BYTE_READER_H
+#endif  //RTFS2D_STRING_BYTE_READER_H

@@ -22,3 +22,36 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 add_subdirectory(thirdparty)
 add_subdirectory(src)
 add_subdirectory(test)
+
+# 代码格式化
+find_program(CLANG_FORMAT
+        NAMES clang-format
+        PATHS ${CMAKE_PREFIX_PATH}/bin
+        NO_DEFAULT_PATH  # 仅搜索指定路径，不搜索系统默认路径
+)
+if(NOT CLANG_FORMAT)
+    find_program(CLANG_FORMAT NAMES clang-format)
+endif()
+
+if(CLANG_FORMAT)
+    file(GLOB_RECURSE ALL_SOURCE_FILES
+            "${PROJECT_SOURCE_DIR}/src/*.cpp"
+            "${PROJECT_SOURCE_DIR}/src/*.h"
+    )
+
+    add_custom_target(format
+            COMMAND ${CLANG_FORMAT} -i -style=file ${ALL_SOURCE_FILES}
+            COMMENT "Running clang-format on all source files."
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    )
+
+    add_custom_target(format-check
+            COMMAND ${CLANG_FORMAT} --dry-run -Werror -style=file ${ALL_SOURCE_FILES}
+            COMMENT "Checking code style with clang-format."
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    )
+
+    message(STATUS "clang-format found at ${CLANG_FORMAT}")
+else()
+    message(WARNING "clang-format not found. The 'format' target will not be available.")
+endif()

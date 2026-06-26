@@ -23,6 +23,6 @@ public:
     virtual ~ByteReader() = default;
 };
 
-}
+}  // namespace cc
 
-#endif //RTFS2D_BYTE_ReadER_H
+#endif  //RTFS2D_BYTE_ReadER_H

@@ -49,7 +49,6 @@ private:
     const int id_;
 };
 
-}
+}  // namespace cc
 
 #endif  // CC_NFA_NODE_H_
-

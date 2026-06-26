@@ -27,8 +27,10 @@ BufferedInput::BufferedInput(std::unique_ptr<ByteReader> reader, int buffer_size
     MarkInternal();
 }
 
-std::unique_ptr<BufferedInput> BufferedInput::FromString(const std::string& utf8_data, int buffer_size) {
-    return std::make_unique<BufferedInput>(std::make_unique<StringByteReader>(utf8_data), buffer_size);
+std::unique_ptr<BufferedInput> BufferedInput::FromString(const std::string& utf8_data,
+                                                         int buffer_size) {
+    return std::make_unique<BufferedInput>(std::make_unique<StringByteReader>(utf8_data),
+                                           buffer_size);
 }
 
 bool BufferedInput::Available() const {

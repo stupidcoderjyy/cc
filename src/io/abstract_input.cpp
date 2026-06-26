@@ -27,8 +27,7 @@ std::string AbstractInput::ReadUtf() {
             int b2 = Read() & 0xFF;
             if ((b2 & 0xC0) != 0x80) {
                 std::ostringstream oss;
-                oss << "Malformed UTF-8: invalid continuation byte after 0x"
-                    << std::hex << b1;
+                oss << "Malformed UTF-8: invalid continuation byte after 0x" << std::hex << b1;
                 throw std::runtime_error(oss.str());
             }
             char data[3]{static_cast<char>(b1), static_cast<char>(b2), '\0'};
@@ -39,8 +38,7 @@ std::string AbstractInput::ReadUtf() {
             int b3 = Read() & 0xFF;
             if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80) {
                 std::ostringstream oss;
-                oss << "Malformed UTF-8: invalid continuation bytes after 0x"
-                    << std::hex << b1;
+                oss << "Malformed UTF-8: invalid continuation bytes after 0x" << std::hex << b1;
                 throw std::runtime_error(oss.str());
             }
             char data[4]{static_cast<char>(b1), static_cast<char>(b2), static_cast<char>(b3), '\0'};
@@ -62,12 +60,11 @@ int AbstractInput::Retract(int count) {
         return -1;
     }
     count--;
-    for (int i = 0 ; i < count ; i ++) {
+    for (int i = 0; i < count; i++) {
         Retract();
     }
     return Retract();
 }
-
 
 int AbstractInput::Approach(int ch) {
     while (Available()) {
@@ -111,7 +108,7 @@ int AbstractInput::Approach(int ch1, int ch2, int ch3) {
 
 void prepareBitClazz(bool* clazz, const std::initializer_list<int>& list) {
     std::memset(clazz, false, 128);
-    for (const auto &ch : list) {
+    for (const auto& ch : list) {
         if (ch >= 0 && ch < 128) {
             clazz[ch] = true;
         }
@@ -159,7 +156,7 @@ int AbstractInput::Find(int ch1, int ch2, int ch3) {
     return -1;
 }
 
-int AbstractInput::Find(const std::initializer_list<int> &list) {
+int AbstractInput::Find(const std::initializer_list<int>& list) {
     PrepareBitClazz(list);
     while (Available()) {
         int ch = Read();
@@ -210,7 +207,7 @@ int AbstractInput::Skip(int ch1, int ch2, int ch3) {
     return pre;
 }
 
-int AbstractInput::Skip(const std::initializer_list<int> &list) {
+int AbstractInput::Skip(const std::initializer_list<int>& list) {
     PrepareBitClazz(list);
     int pre = -1;
     while (Available()) {
@@ -224,15 +221,13 @@ int AbstractInput::Skip(const std::initializer_list<int> &list) {
     return pre;
 }
 
-
-
 inline void AbstractInput::PrepareBitClazz(const std::initializer_list<int>& list) {
     std::ranges::fill(bit_clazz_, false);
-    for (const auto &ch : list) {
+    for (const auto& ch : list) {
         if (ch >= 0 && ch < 128) {
             bit_clazz_[ch] = true;
         }
     }
 }
 
-}
+}  // namespace cc

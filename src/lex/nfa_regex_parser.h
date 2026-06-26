@@ -6,8 +6,8 @@
 #include <unordered_set>
 #include <vector>
 
-#include "nfa.h"
 #include "io/abstract_input.h"
+#include "nfa.h"
 
 namespace cc {
 
@@ -18,9 +18,7 @@ public:
 
     NFANode* GetStart() const { return nfa_start_; }
     NFANode* GetEnd() const { return nfa_end_; }
-    const std::vector<std::string>& GetNodeIdToToken() const {
-        return node_id_to_token_;
-    }
+    const std::vector<std::string>& GetNodeIdToToken() const { return node_id_to_token_; }
 
 private:
     std::unique_ptr<AbstractInput> input_;
@@ -44,6 +42,6 @@ private:
     [[noreturn]] void Err(const std::string& cause) const;
 };
 
-}
+}  // namespace cc
 
 #endif  // CC_NFA_REGEX_PARSER_H_

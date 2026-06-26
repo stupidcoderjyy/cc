@@ -12,7 +12,6 @@
 namespace cc {
 
 class StringInput : public AbstractInput {
-
 public:
     // 接受 UTF-8 编码的字节序列（通常来自 std::string）
     explicit StringInput(std::string utf8_data);
@@ -35,8 +34,6 @@ private:
     std::string CaptureSubstring(int end, int start) const;
 };
 
-}
+}  // namespace cc
 
-
-
-#endif //RTFS2D_STRING_INPUT_H
+#endif  //RTFS2D_STRING_INPUT_H

@@ -10,8 +10,7 @@
 
 namespace cc {
 
-StringInput::StringInput(std::string utf8_data)
-    : data_(std::move(utf8_data)) {}
+StringInput::StringInput(std::string utf8_data) : data_(std::move(utf8_data)) {}
 
 int StringInput::Read() {
     if (!Available()) {
@@ -27,7 +26,9 @@ int StringInput::Forward() {
     return static_cast<unsigned char>(data_[next_]);
 }
 
-void StringInput::Mark() { marks_.push_back(next_); }
+void StringInput::Mark() {
+    marks_.push_back(next_);
+}
 
 void StringInput::RemoveMark() {
     if (marks_.empty()) {
@@ -46,7 +47,9 @@ void StringInput::Recover(bool consume_mark) {
     }
 }
 
-void StringInput::Recover() { Recover(true); }
+void StringInput::Recover() {
+    Recover(true);
+}
 
 std::string StringInput::Capture() {
     if (marks_.empty()) return "";
@@ -63,7 +66,9 @@ std::string StringInput::Capture() {
     return CaptureSubstring(end, start);
 }
 
-bool StringInput::Available() const { return next_ < static_cast<int>(data_.size()); }
+bool StringInput::Available() const {
+    return next_ < static_cast<int>(data_.size());
+}
 
 int StringInput::Retract() {
     if (next_ <= 0) {
@@ -80,4 +85,4 @@ std::string StringInput::CaptureSubstring(int end, int start) const {
     return data_.substr(start, end - start);
 }
 
-}
+}  // namespace cc

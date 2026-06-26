@@ -45,8 +45,7 @@ void NFARegexParser::RegisterSingle(std::initializer_list<char> chs) {
     }
 }
 
-void NFARegexParser::SetAcceptedNode(NFA& target,
-                                     const std::string& token) {
+void NFARegexParser::SetAcceptedNode(NFA& target, const std::string& token) {
     target.end()->set_accepted(true);
     int end_id = target.end()->id();
     if (static_cast<size_t>(end_id) >= node_id_to_token_.size()) {
@@ -173,14 +172,15 @@ CharPredicate NFARegexParser::Clazz(bool exclude) {
                 if (!result) {
                     result = std::move(inner);
                 } else {
-                    result = [a = std::move(result),
-                              b = std::move(inner)](int c) { return a(c) || b(c); };
+                    result = [a = std::move(result), b = std::move(inner)](int c) {
+                        return a(c) || b(c);
+                    };
                 }
                 break;
             }
             case ']':
                 if (exclude) {
-                    return [p = std::move(result)](int c){ return !p(c); };
+                    return [p = std::move(result)](int c) { return !p(c); };
                 }
                 return result;
             default: {
@@ -192,8 +192,9 @@ CharPredicate NFARegexParser::Clazz(bool exclude) {
                 if (!result) {
                     result = std::move(p);
                 } else {
-                    result = [a = std::move(result),
-                              p = std::move(p)](int c) { return a(c) || p(c); };
+                    result = [a = std::move(result), p = std::move(p)](int c) {
+                        return a(c) || p(c);
+                    };
                 }
                 break;
             }
@@ -233,26 +234,22 @@ CharPredicate NFARegexParser::Escape() const {
         case 'W':
         case 'w':
             return [](int c) {
-                return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-                       (c >= '0' && c <= '9') || c == '_';
+                return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+                       c == '_';
             };
         case 'U':
         case 'u':
             return [](int c) {
-                return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-                       (c >= '0' && c <= '9');
+                return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
             };
         case 'H':
         case 'h':
             return [](int c) {
-                return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ||
-                       (c >= 'A' && c <= 'F');
+                return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
             };
         case 'A':
         case 'a':
-            return [](int c) {
-                return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-        };
+            return [](int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); };
         case '.':
             return [](int) { return true; };
         default:
@@ -266,4 +263,4 @@ void NFARegexParser::Err(const std::string& cause) const {
     throw std::runtime_error(oss.str());
 }
 
-}
+}  // namespace cc

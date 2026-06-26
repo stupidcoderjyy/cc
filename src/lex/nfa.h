@@ -41,5 +41,5 @@ private:
     void MergeInternalNodes(NFA& other);
 };
 
-}
+}  // namespace cc
 #endif  // CC_NFA_H_
