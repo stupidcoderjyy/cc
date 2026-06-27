@@ -17,13 +17,12 @@ void NFARegexParser::Register(std::string regex, const std::string& token) {
     nfa_pool_.push_back(Expr(false));
     NFA& regex_nfa = nfa_pool_.back();
     SetAcceptedNode(regex_nfa, token);
-    if (nfa_start_ == nullptr) {
-        nfa_start_ = regex_nfa.start();
-        nfa_end_ = regex_nfa.end();
+    if (!root_node_) {
+        root_node_ = regex_nfa.start();
     } else {
         auto new_start = std::make_unique<NFANode>();
-        new_start->AddEpsilonEdge(regex_nfa.start(), nfa_start_);
-        nfa_start_ = new_start.get();
+        new_start->AddEpsilonEdge(regex_nfa.start(), root_node_);
+        root_node_ = new_start.get();
         owned_nodes_.push_back(std::move(new_start));
     }
 }
@@ -165,6 +164,7 @@ CharPredicate NFARegexParser::Clazz(bool exclude) {
     while (input_->Available()) {
         switch (input_->Read()) {
             case '[': {
+                //排除模式只作用于最外层
                 CharPredicate inner = Clazz(false);
                 if (!inner) {
                     return nullptr;
@@ -180,6 +180,9 @@ CharPredicate NFARegexParser::Clazz(bool exclude) {
             }
             case ']':
                 if (exclude) {
+                    if (!result) {
+                        Err("empty character class");
+                    }
                     return [p = std::move(result)](int c) { return !p(c); };
                 }
                 return result;

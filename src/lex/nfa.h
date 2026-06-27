@@ -36,6 +36,7 @@ public:
 private:
     std::unique_ptr<NFANode> start_;
     std::unique_ptr<NFANode> end_;
+    // 持有内部结点所有权
     std::vector<std::unique_ptr<NFANode>> internal_nodes_;
 
     void MergeInternalNodes(NFA& other);

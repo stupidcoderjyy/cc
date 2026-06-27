@@ -20,6 +20,7 @@ public:
 
     NFANode();
 
+    static int node_count() { return node_count_; }
     void AddEpsilonEdge(NFANode* next);
     void AddEpsilonEdge(NFANode* next1, NFANode* next2);
     void AddCharEdge(CharPredicate predicate, NFANode* next);

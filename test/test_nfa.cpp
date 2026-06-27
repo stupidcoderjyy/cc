@@ -85,7 +85,7 @@ protected:
     static bool MatchRegex(const std::string& regex, const std::string& input) {
         NFARegexParser local_parser;
         local_parser.Register(regex, "test");
-        NFASimulator sim(local_parser.GetStart());
+        NFASimulator sim(local_parser.root_node());
         return sim.Match(input);
     }
 };
@@ -155,6 +155,8 @@ TEST_F(NFARegexParserTest, CharClass) {
 
     EXPECT_TRUE(MatchRegex(R"([^0-9])", "a"));
     EXPECT_FALSE(MatchRegex(R"([^0-9])", "5"));
+
+    EXPECT_THROW(MatchRegex(R"([^])", "a"), std::exception);
 }
 
 TEST_F(NFARegexParserTest, CharClassNested) {
@@ -199,7 +201,7 @@ TEST_F(NFARegexParserTest, MultipleRegister) {
     NFARegexParser parser;
     parser.Register(R"(abc)", "token1");
     parser.Register(R"(def)", "token2");
-    NFASimulator sim(parser.GetStart());
+    NFASimulator sim(parser.root_node());
     EXPECT_TRUE(sim.Match("abc"));
     EXPECT_TRUE(sim.Match("def"));
 }

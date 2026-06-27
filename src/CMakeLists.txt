@@ -8,6 +8,7 @@ add_library(${TARGET} STATIC
         lex/nfa_node.cpp
         lex/nfa.cpp
         lex/nfa_regex_parser.cpp
+        lex/dfa_builder.cpp
 )
 add_library(cc::core ALIAS ${TARGET})
 target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

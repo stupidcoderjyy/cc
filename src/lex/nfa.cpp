@@ -14,13 +14,13 @@ void NFA::And(NFA other) {
         start_ = std::move(other.start_);
         end_ = std::move(other.end_);
         internal_nodes_ = std::move(other.internal_nodes_);
-        return;
+    } else {
+        end_->AddEpsilonEdge(other.start_.get());
+        internal_nodes_.push_back(std::move(end_));
+        end_ = std::move(other.end_);
+        internal_nodes_.push_back(std::move(other.start_));
+        MergeInternalNodes(other);
     }
-    end_->AddEpsilonEdge(other.start_.get());
-    internal_nodes_.push_back(std::move(end_));
-    end_ = std::move(other.end_);
-    internal_nodes_.push_back(std::move(other.start_));
-    MergeInternalNodes(other);
 }
 
 void NFA::AndAtom(CharPredicate predicate) {
@@ -76,20 +76,20 @@ void NFA::Or(NFA other) {
         start_ = std::move(other.start_);
         end_ = std::move(other.end_);
         internal_nodes_ = std::move(other.internal_nodes_);
-        return;
+    } else {
+        auto new_start = std::make_unique<NFANode>();
+        auto new_end = std::make_unique<NFANode>();
+        new_start->AddEpsilonEdge(start_.get(), other.start_.get());
+        end_->AddEpsilonEdge(new_end.get());
+        other.end_->AddEpsilonEdge(new_end.get());
+        internal_nodes_.push_back(std::move(start_));
+        internal_nodes_.push_back(std::move(end_));
+        internal_nodes_.push_back(std::move(other.start_));
+        internal_nodes_.push_back(std::move(other.end_));
+        start_ = std::move(new_start);
+        end_ = std::move(new_end);
+        MergeInternalNodes(other);
     }
-    auto new_start = std::make_unique<NFANode>();
-    auto new_end = std::make_unique<NFANode>();
-    new_start->AddEpsilonEdge(start_.get(), other.start_.get());
-    end_->AddEpsilonEdge(new_end.get());
-    other.end_->AddEpsilonEdge(new_end.get());
-    internal_nodes_.push_back(std::move(start_));
-    internal_nodes_.push_back(std::move(end_));
-    internal_nodes_.push_back(std::move(other.start_));
-    internal_nodes_.push_back(std::move(other.end_));
-    start_ = std::move(new_start);
-    end_ = std::move(new_end);
-    MergeInternalNodes(other);
 }
 
 std::string NFA::ToString() const {

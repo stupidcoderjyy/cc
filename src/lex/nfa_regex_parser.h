@@ -16,16 +16,15 @@ public:
     void Register(std::string regex, const std::string& token);
     void RegisterSingle(std::initializer_list<char> chs);
 
-    NFANode* GetStart() const { return nfa_start_; }
-    NFANode* GetEnd() const { return nfa_end_; }
-    const std::vector<std::string>& GetNodeIdToToken() const { return node_id_to_token_; }
+    NFANode* root_node() const { return root_node_; }
+    std::vector<std::string> node_id_to_token() const { return node_id_to_token_; }
 
 private:
     std::unique_ptr<AbstractInput> input_;
     std::string regex_;
+    // 每个正则表达式对应的NFA
     std::vector<NFA> nfa_pool_;
-    NFANode* nfa_start_ = nullptr;
-    NFANode* nfa_end_ = nullptr;
+    NFANode* root_node_ = nullptr;
     std::vector<std::unique_ptr<NFANode>> owned_nodes_;
     std::vector<std::string> node_id_to_token_;
     std::unordered_set<char> singles_;
