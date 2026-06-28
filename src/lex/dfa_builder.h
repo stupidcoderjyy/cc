@@ -18,7 +18,8 @@ public:
     void Build();
     void BuildCharClassMap();
 
-    static constexpr int kMaxChars = CHAR_MAX;
+    static constexpr int kMaxChars = CHAR_MAX;  // 可输入的最大字符
+    static constexpr int kMaxPredicates = 128;  // 最大字符集数
     const std::vector<int>& char_to_class() const { return char_to_class_; }
     int class_count() const { return class_count_; }
 

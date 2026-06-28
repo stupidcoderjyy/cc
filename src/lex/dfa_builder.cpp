@@ -4,9 +4,13 @@
 
 #include "dfa_builder.h"
 
+#include <algorithm>
+#include <bitset>
+#include <stdexcept>
 #include <vector>
 
 #include "nfa_node.h"
+#include "util/bitset_hash.h"
 
 namespace cc {
 
@@ -26,15 +30,19 @@ void DfaBuilder::BuildCharClassMap() {
     });
     //遍历所有候选字符，为每个字符构建签名向量
     // char_signatures[字符] = 签名向量
-    std::array<std::vector<bool>, kMaxChars> char_signatures;
+    if (predicates.size() > kMaxPredicates) {
+        throw std::runtime_error("Too many predicates");
+    }
+    //char_signatures[字符][谓词]=是否符合
+    std::array<std::bitset<kMaxPredicates>, kMaxChars> char_signatures;
     for (int c = 0; c < kMaxChars; ++c) {
         auto& signature = char_signatures[c];
-        for (const auto& pred : predicates) {
-            signature.push_back(pred(c));
+        for (int i = 0; i < predicates.size(); ++i) {
+            signature.set(i, predicates[i](c));
         }
     }
     //按签名分组，相同签名的字符归为一个类
-    std::unordered_map<std::vector<bool>, int> class_map;
+    std::unordered_map<std::bitset<kMaxPredicates>, int, BitsetHash<kMaxPredicates>> class_map;
     std::vector<int> char_to_class(kMaxChars);
     for (int c = 0; c < kMaxChars; ++c) {
         const auto& sig = char_signatures[c];
