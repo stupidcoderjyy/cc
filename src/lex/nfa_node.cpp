@@ -26,7 +26,7 @@ void NFANode::AddCharEdge(CharPredicate predicate, NFANode* next) {
     edge_type_ = EdgeType::kChar;
 }
 
-void NFANode::ForEachEdge(const std::function<void(NFANode* cur, NFANode* nxt)> &func) {
+void NFANode::ForEachEdge(const std::function<void(NFANode* cur, NFANode* nxt)>& func) {
     switch (edge_type_) {
         case EdgeType::kSingleEpsilon:
         case EdgeType::kChar:

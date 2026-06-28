@@ -15,3 +15,5 @@ target_link_libraries(${TARGET} PRIVATE
 )
 
 gtest_discover_tests(${TARGET})
+
+add_dependencies(${TARGET} format)

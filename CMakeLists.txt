@@ -19,10 +19,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         cc::core
 )
 
-add_subdirectory(thirdparty)
-add_subdirectory(src)
-add_subdirectory(test)
-
 # 代码格式化
 find_program(CLANG_FORMAT
         NAMES clang-format
@@ -45,13 +41,13 @@ if(CLANG_FORMAT)
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     )
 
-    add_custom_target(format-check
-            COMMAND ${CLANG_FORMAT} --dry-run -Werror -style=file ${ALL_SOURCE_FILES}
-            COMMENT "Checking code style with clang-format."
-            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    )
+    add_dependencies(${PROJECT_NAME} format)
 
     message(STATUS "clang-format found at ${CLANG_FORMAT}")
 else()
     message(WARNING "clang-format not found. The 'format' target will not be available.")
 endif()
+
+add_subdirectory(thirdparty)
+add_subdirectory(src)
+add_subdirectory(test)

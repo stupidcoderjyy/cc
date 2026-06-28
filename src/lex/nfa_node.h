@@ -23,7 +23,7 @@ public:
     void AddEpsilonEdge(NFANode* next);
     void AddEpsilonEdge(NFANode* next1, NFANode* next2);
     void AddCharEdge(CharPredicate predicate, NFANode* next);
-    void ForEachEdge(const std::function<void(NFANode* cur, NFANode* nxt)> &func);
+    void ForEachEdge(const std::function<void(NFANode* cur, NFANode* nxt)>& func);
 
     int id() const { return id_; }
     bool accepted() const { return accepted_; }
@@ -46,7 +46,7 @@ private:
     NFANode* next2_ = nullptr;
     CharPredicate predicate_ = nullptr;
     bool accepted_ = false;
-    int id_ = -1;    //由NfaRegexParser管理
+    int id_ = -1;  //由NfaRegexParser管理
 };
 
 }  // namespace cc

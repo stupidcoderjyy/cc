@@ -96,9 +96,8 @@ std::string NFA::ToString() const {
 }
 
 void NFA::MergeInternalNodes(NFA& other) {
-    nodes_.insert(nodes_.end(),
-                           std::make_move_iterator(other.nodes_.begin()),
-                           std::make_move_iterator(other.nodes_.end()));
+    nodes_.insert(nodes_.end(), std::make_move_iterator(other.nodes_.begin()),
+                  std::make_move_iterator(other.nodes_.end()));
 }
 
 }  // namespace cc

@@ -95,10 +95,8 @@ DfaBuilder::NfaGroup DfaBuilder::EpsilonClosure(NfaGroup group) {
 void DfaBuilder::VisitNfa(const std::function<void(NFANode*)>& processor) const {
     std::vector<bool> node_visited;
     node_visited.reserve(kMaxNfaGroups);
-    std::vector unvisited{ root_node_ };
-    auto add_unvisited = [&unvisited](NFANode*, NFANode* node) {
-        unvisited.push_back(node);
-    };
+    std::vector unvisited{root_node_};
+    auto add_unvisited = [&unvisited](NFANode*, NFANode* node) { unvisited.push_back(node); };
     while (!unvisited.empty()) {
         auto* node = unvisited.back();
         unvisited.pop_back();

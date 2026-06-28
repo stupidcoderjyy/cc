@@ -19,6 +19,7 @@ public:
     NFANode* root_node() const { return root_node_; }
     std::vector<std::string> node_id_to_token() const { return node_id_to_token_; }
     const std::vector<std::unique_ptr<NFANode>>& nodes() const { return nodes_; }
+
 private:
     std::unique_ptr<AbstractInput> input_;
     std::string regex_;
