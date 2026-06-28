@@ -156,6 +156,10 @@ TEST_F(NFARegexParserTest, CharClass) {
     EXPECT_TRUE(MatchRegex(R"([^0-9])", "a"));
     EXPECT_FALSE(MatchRegex(R"([^0-9])", "5"));
 
+    EXPECT_TRUE(MatchRegex(R"([\n])", "\n"));
+    EXPECT_TRUE(MatchRegex(R"([\t])", "\t"));
+    EXPECT_TRUE(MatchRegex(R"([\x])", "x"));
+
     EXPECT_THROW(MatchRegex(R"([^])", "a"), std::exception);
 }
 
@@ -172,8 +176,9 @@ TEST_F(NFARegexParserTest, Escape) {
     EXPECT_TRUE(MatchRegex(R"(\w)", "A"));
     EXPECT_TRUE(MatchRegex(R"(\w)", "_"));
     EXPECT_FALSE(MatchRegex(R"(\w)", "!"));
-    // \s 可能未实现，若实现则取消注释
-    // EXPECT_TRUE(MatchRegex(R"(\s)", " "));
+    EXPECT_TRUE(MatchRegex(R"(\n)", "\n"));
+    EXPECT_TRUE(MatchRegex(R"(\t)", "\t"));
+    EXPECT_TRUE(MatchRegex(R"([\x])", "x"));
 }
 
 // ---------- 分组 ----------

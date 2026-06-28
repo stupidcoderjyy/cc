@@ -107,39 +107,32 @@ NFA NFARegexParser::Seq() {
 NFA NFARegexParser::Atom() {
     input_->Retract();
     int b = input_->Read();
-    CharPredicate predicate = nullptr;
+    CharPredicate p = nullptr;
     switch (b) {
         case '[':
             if (input_->Available() && input_->Forward() == '^') {
                 input_->Read();
-                predicate = Clazz(true);
+                p = Clazz(true);
             } else {
-                predicate = Clazz(false);
+                p = Clazz(false);
             }
             break;
         case '\\':
-            if (!input_->Available()) {
-                Err("incomplete skipping");
-            }
-            predicate = Escape();
-            if (!predicate) {
-                input_->Retract();
-                predicate = [ch = input_->Read()](int c) { return c == ch; };
-            }
+            p = Escape();
             break;
         case '*':
         case '?':
         case '+':
             Err("invalid closure symbol");
         default:
-            predicate = [b](int c) { return c == b; };
+            p = [b](int c) { return c == b; };
             break;
     }
-    if (!predicate) {
+    if (!p) {
         Err("invalid predicate");
     }
     NFA target;
-    target.AndAtom(std::move(predicate));
+    target.AndAtom(std::move(p));
     return CheckClosure(std::move(target));
 }
 
@@ -192,7 +185,13 @@ CharPredicate NFARegexParser::Clazz(bool exclude) {
                 return result;
             default: {
                 input_->Retract();
-                CharPredicate p = MinClazzPredicate();
+                CharPredicate p;
+                if (input_->Forward() == '\\') {
+                    input_->Read();
+                    p = Escape();
+                } else {
+                    p = MinClazzPredicate();
+                }
                 if (!p) {
                     return nullptr;
                 }
@@ -232,9 +231,9 @@ CharPredicate NFARegexParser::MinClazzPredicate() const {
 
 CharPredicate NFARegexParser::Escape() const {
     if (!input_->Available()) {
-        return nullptr;
+        Err("incomplete escape");
     }
-    switch (input_->Read()) {
+    switch (int e = input_->Read()) {
         case 'D':
         case 'd':
             return [](int c) { return c >= '0' && c <= '9'; };
@@ -259,8 +258,12 @@ CharPredicate NFARegexParser::Escape() const {
             return [](int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); };
         case '.':
             return [](int) { return true; };
+        case 'n':
+            return [](int c) { return c == '\n'; };
+        case 't':
+            return [](int c) { return c == '\t'; };
         default:
-            return nullptr;
+            return [e](int c) { return c == e; };
     }
 }
 
