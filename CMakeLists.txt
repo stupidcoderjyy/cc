@@ -33,6 +33,7 @@ if(CLANG_FORMAT)
     file(GLOB_RECURSE ALL_SOURCE_FILES
             "${PROJECT_SOURCE_DIR}/src/*.cpp"
             "${PROJECT_SOURCE_DIR}/src/*.h"
+            "${PROJECT_SOURCE_DIR}/test/*.cpp"
     )
 
     add_custom_target(format

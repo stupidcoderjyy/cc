@@ -2,12 +2,14 @@
 // Created by PC on 2026/6/26.
 //
 
-#include <algorithm>
-#include <gtest/gtest.h>
-#include <unordered_set>
-#include <queue>
-
 #include "lex/nfa_regex_parser.h"
+
+#include <gtest/gtest.h>
+
+#include <algorithm>
+#include <queue>
+#include <unordered_set>
+
 #include "lex/nfa_node.h"
 
 namespace cc {
@@ -28,16 +30,15 @@ public:
         }
 
         // 检查是否有接受状态
-        return std::ranges::any_of(current, [](auto* state) {
-            return state->accepted();
-        });
+        return std::ranges::any_of(current, [](auto* state) { return state->accepted(); });
     }
 
 private:
     static std::unordered_set<NFANode*> EpsilonClosure(const std::unordered_set<NFANode*>& states) {
         std::unordered_set<NFANode*> closure = states;
         std::queue<NFANode*> q;
-        for (auto s : states) q.push(s);
+        for (auto s : states)
+            q.push(s);
 
         while (!q.empty()) {
             auto* s = q.front();
@@ -220,4 +221,4 @@ TEST_F(NFARegexParserTest, InvalidRegex) {
     EXPECT_THROW(parser.Register(R"(a*+)", "test"), std::exception);
 }
 
-}
+}  // namespace cc

@@ -13,12 +13,11 @@ namespace cc {
 class DfaBuilderBuildCharClassMapTest : public ::testing::Test {
 protected:
     // 辅助函数：检查所有字符是否按签名正确分组
-    static void CheckClasses(const std::vector<int>& char_to_class,
-                             int class_count,
+    static void CheckClasses(const std::vector<int>& char_to_class, int class_count,
                              const std::vector<CharPredicate>& predicates) {
         // 计算每个字符的签名向量，映射到类ID，验证一致性
         std::unordered_map<std::vector<bool>, int> signature_to_class;
-        for (int c = 0; c < DfaBuilder::kMaxChars; ++c) {
+        for (int c = 0; c < kMaxChars; ++c) {
             std::vector<bool> sig;
             for (const auto& pred : predicates) {
                 sig.push_back(pred(c));
@@ -33,20 +32,13 @@ protected:
         EXPECT_EQ(signature_to_class.size(), class_count)
             << "Number of classes does not match number of distinct signatures.";
     }
-
-    // 构造一个只包含一个字符谓词的NFA（根节点为start）
-    static NFA BuildSinglePredicateNFA(CharPredicate pred) {
-        NFA nfa;
-        nfa.AndAtom(std::move(pred));
-        return nfa;
-    }
 };
 
 // 用例1：单一字符谓词（数字）
 TEST_F(DfaBuilderBuildCharClassMapTest, SinglePredicate) {
     NFARegexParser parser;
     parser.Register("[0-9]", "");
-    DfaBuilder builder(parser.root_node());
+    DfaBuilder builder(parser.root_node(), {});
     builder.BuildCharClassMap();
 
     EXPECT_EQ(builder.class_count(), 2);
@@ -60,7 +52,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, TwoDistinctPredicates) {
     NFARegexParser parser;
     parser.Register("[0-9]", "");
     parser.Register("[a-zA-Z]", "");
-    DfaBuilder builder(parser.root_node());
+    DfaBuilder builder(parser.root_node(), {});
     builder.BuildCharClassMap();
 
     EXPECT_EQ(builder.class_count(), 3);  // digit, alpha, other
@@ -75,7 +67,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, SamePredicates) {
     NFARegexParser parser;
     parser.Register("[0-9]", "");
     parser.Register("[0-9]", "");
-    DfaBuilder builder(parser.root_node());
+    DfaBuilder builder(parser.root_node(), {});
     builder.BuildCharClassMap();
 
     // 预期仍然只有两类：digit 和 non-digit
@@ -92,7 +84,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, ThreeDistinctPredicates) {
     parser.Register("[0-9]", "");
     parser.Register("[a-zA-Z]", "");
     parser.Register("[ \t\n]", "");
-    DfaBuilder builder(parser.root_node());
+    DfaBuilder builder(parser.root_node(), {});
     builder.BuildCharClassMap();
 
     // 四种组合：digit, alpha, space, other

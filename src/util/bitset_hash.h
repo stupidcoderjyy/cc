@@ -6,7 +6,9 @@
 #define CC_BITSET_HASH_H
 
 #include <bitset>
+#include <cstdint>
 #include <cstring>
+#include <unordered_map>
 
 namespace cc {
 
@@ -37,6 +39,9 @@ struct BitsetHash {
         return hash;
     }
 };
+
+template <typename V, size_t N>
+using BitsetMap = std::unordered_map<std::bitset<N>, V, BitsetHash<N>>;
 
 }  // namespace cc
 

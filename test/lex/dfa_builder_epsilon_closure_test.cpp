@@ -2,6 +2,7 @@
 // Created by PC on 2026/6/28.
 //
 #include <gtest/gtest.h>
+
 #include "lex/dfa_builder.h"
 #include "lex/nfa_node.h"
 
@@ -21,9 +22,9 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureSingleNode) {
     n0->set_id(0);
 
     // 根节点就是 n0
-    DfaBuilder builder(n0);
+    DfaBuilder builder(n0, {});
 
-    DfaBuilder::NfaGroup group;
+    NfaGroup group;
     group.set(n0->id());
     auto closure = builder.EpsilonClosure(group);
 
@@ -45,9 +46,9 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureChain) {
     n0->AddEpsilonEdge(n1);
     n1->AddEpsilonEdge(n2);
 
-    DfaBuilder builder(n0);  // n0 为根，n1/n2 通过 ε 边可达
+    DfaBuilder builder(n0, {});  // n0 为根，n1/n2 通过 ε 边可达
 
-    DfaBuilder::NfaGroup group;
+    NfaGroup group;
     group.set(n0->id());
     auto closure = builder.EpsilonClosure(group);
 
@@ -71,9 +72,9 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureCycle) {
     n0->AddEpsilonEdge(n1);
     n1->AddEpsilonEdge(n0);
 
-    DfaBuilder builder(n0);
+    DfaBuilder builder(n0, {});
 
-    DfaBuilder::NfaGroup group;
+    NfaGroup group;
     group.set(n0->id());
     auto closure = builder.EpsilonClosure(group);
 
@@ -95,9 +96,9 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureIgnoreCharEdge) {
     // 字符边：从 n0 到 n1
     n0->AddCharEdge([](int) { return true; }, n1);
 
-    DfaBuilder builder(n0);  // n1 通过字符边可达，但 ε 闭包应忽略
+    DfaBuilder builder(n0, {});  // n1 通过字符边可达，但 ε 闭包应忽略
 
-    DfaBuilder::NfaGroup group;
+    NfaGroup group;
     group.set(n0->id());
     auto closure = builder.EpsilonClosure(group);
 
@@ -132,9 +133,9 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureMultipleStart) {
     // 虚拟根通过 ε 边到 n0 和 n1
     root->AddEpsilonEdge(n0, n1);  // 使用双 ε 边
 
-    DfaBuilder builder(root);  // 所有节点从 root 可达
+    DfaBuilder builder(root, {});  // 所有节点从 root 可达
 
-    DfaBuilder::NfaGroup group;
+    NfaGroup group;
     group.set(n0->id());
     group.set(n1->id());
     auto closure = builder.EpsilonClosure(group);
@@ -161,9 +162,9 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureCache) {
 
     n0->AddEpsilonEdge(n1);
 
-    DfaBuilder builder(n0);
+    DfaBuilder builder(n0, {});
 
-    DfaBuilder::NfaGroup group;
+    NfaGroup group;
     group.set(n0->id());
 
     auto closure1 = builder.EpsilonClosure(group);

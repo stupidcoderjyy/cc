@@ -6,30 +6,34 @@
 
 #include <algorithm>
 #include <bitset>
+#include <stack>
 #include <stdexcept>
 #include <vector>
 
 #include "nfa_node.h"
 #include "nfa_regex_parser.h"
-#include "util/bitset_hash.h"
 
 namespace cc {
 
-DfaBuilder::DfaBuilder(NFANode* root_node) : root_node_(root_node) {
+DfaBuilder::DfaBuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_token)
+    : root_node_(root_node), nfa_node_to_token_(std::move(nfa_node_to_token)) {
     VisitNfa([this](NFANode* node) {
-        if (node->id() >= id_to_node_.size()) {
-            id_to_node_.resize(node->id() + 1);
+        if (node->id() >= nfa_nodes_.size()) {
+            nfa_nodes_.resize(node->id() + 1);
         }
-        id_to_node_[node->id()] = node;
+        nfa_nodes_[node->id()] = node;
     });
 }
 
 void DfaBuilder::Build() {
     BuildCharClassMap();
+    ComputeClassRepresentativeChar();
+    ComputeNfaCharClassMask();
+    BuildDfaFromNfa();
 }
 
 void DfaBuilder::BuildCharClassMap() {
-    // 1. 收集所有CHAR边上的谓词
+    // 收集所有CHAR边上的谓词
     std::vector<CharPredicate> predicates;
     VisitNfa([&predicates](NFANode* node) {
         if (node->edge_type() == NFANode::EdgeType::kChar) {
@@ -50,7 +54,7 @@ void DfaBuilder::BuildCharClassMap() {
         }
     }
     //按签名分组，相同签名的字符归为一个类
-    std::unordered_map<std::bitset<kMaxPredicates>, int, BitsetHash<kMaxPredicates>> class_map;
+    BitsetMap<int, kMaxPredicates> class_map;
     std::vector<int> char_to_class(kMaxChars);
     for (int c = 0; c < kMaxChars; ++c) {
         const auto& sig = char_signatures[c];
@@ -63,33 +67,116 @@ void DfaBuilder::BuildCharClassMap() {
     class_count_ = static_cast<int>(class_map.size());
 }
 
-DfaBuilder::NfaGroup DfaBuilder::EpsilonClosure(NfaGroup group) {
+void DfaBuilder::ComputeClassRepresentativeChar() {
+    class_representative_char_.resize(class_count_);
+    for (int cid = 0; cid < class_count_; ++cid) {
+        for (char c = 0; c < kMaxChars; ++c) {
+            if (char_to_class_[c] == cid) {
+                class_representative_char_[cid] = c;
+                break;
+            }
+        }
+    }
+}
+
+void DfaBuilder::ComputeNfaCharClassMask() {
+    if (class_count_ > kMaxCharClass) {
+        throw std::runtime_error("too many character classes");
+    }
+    nfa_node_to_char_class_.resize(nfa_nodes_.size());
+    VisitNfa([this](NFANode* node) {
+        if (node->edge_type() != NFANode::EdgeType::kChar) {
+            return;  // ε边不处理
+        }
+        CharClassBitMask mask;
+        const auto& pred = node->predicate();
+
+        // 遍历所有字符类，判断该类是否能通过该谓词
+        for (int cid = 0; cid < class_count_; ++cid) {
+            // 用代表字符测试谓词
+            mask.set(cid, pred(class_representative_char_[cid]));
+        }
+
+        // 保存映射
+        nfa_node_to_char_class_[node->id()] = mask;
+    });
+}
+
+NfaGroup DfaBuilder::EpsilonClosure(NfaGroup group) {
     if (epsilon_cache_.contains(group)) {
         return epsilon_cache_[group];
     }
     // 必然能够在不输入字符的情况下到达自己
     auto result = group;
-    std::vector<int> nodes;
-    nodes.reserve(kMaxNfaGroups);
-    for (int i = 0; i < id_to_node_.size(); ++i) {
-        if (group.test(i)) {
-            nodes.push_back(i);
-        }
-    }
+    shared_stack_.reserve(kMaxNfaGroups);
+    shared_stack_.clear();
+    VisitNfaGroup(group, [&](NFANode* node) { shared_stack_.push_back(node->id()); });
     auto step_epsilon = [&](NFANode* cur, NFANode* nxt) {
         // 如果后继结点不在组内，则加入组，并加入待检查集合
         if (cur->edge_type() != NFANode::EdgeType::kChar && !result.test(nxt->id())) {
             result.set(nxt->id());
-            nodes.push_back(nxt->id());
+            shared_stack_.push_back(nxt->id());
         }
     };
-    while (!nodes.empty()) {
-        auto* node = id_to_node_[nodes.back()];
-        nodes.pop_back();
+    while (!shared_stack_.empty()) {
+        auto* node = nfa_nodes_[shared_stack_.back()];
+        shared_stack_.pop_back();
         node->ForEachEdge(step_epsilon);
     }
     epsilon_cache_[group] = result;
     return result;
+}
+
+NfaGroup DfaBuilder::Next(int char_class, NfaGroup group) {
+    NfaGroup result;
+    VisitNfaGroup(group, [&](NFANode* node) {
+        if (node->edge_type() != NFANode::EdgeType::kChar) {
+            return;
+        }
+        if (nfa_node_to_char_class_[node->id()].test(char_class)) {
+            result.set(node->next1()->id());
+        }
+    });
+    return EpsilonClosure(result);
+}
+
+Dfa DfaBuilder::BuildDfaFromNfa() {
+    Dfa dfa;
+    std::stack<DfaState*> unprocessed;
+    NfaGroupMap<DfaState::id_t> nfa_group_to_dfa_state;
+
+    {
+        // 创建初始DFA状态，并加入待处理
+        NfaGroup start_nfa_group{};
+        start_nfa_group.set(root_node_->id(), true);
+        start_nfa_group = EpsilonClosure(start_nfa_group);
+        auto* start_dfa_state = CreateDfaState(dfa, start_nfa_group);
+        unprocessed.push(start_dfa_state);
+        nfa_group_to_dfa_state[start_nfa_group] = start_dfa_state->id;
+        dfa.start_state = start_dfa_state->id;
+    }
+
+    while (!unprocessed.empty()) {
+        auto* dfa_state = unprocessed.top();
+        unprocessed.pop();
+        NfaGroup next_nfa_group;
+        for (int cid = 0; cid < class_count_; ++cid) {
+            next_nfa_group = Next(cid, dfa_state->nfa_group);
+            if (!next_nfa_group.none()) {
+                DfaState::id_t next_id;
+                if (nfa_group_to_dfa_state.contains(next_nfa_group)) {
+                    next_id = nfa_group_to_dfa_state[next_nfa_group];
+                } else {
+                    auto* next_dfa_state = CreateDfaState(dfa, next_nfa_group);
+                    unprocessed.push(next_dfa_state);
+                    next_id = next_dfa_state->id;
+                    nfa_group_to_dfa_state[next_nfa_group] = next_id;
+                }
+                dfa_state->class_id_to_next[cid] = next_id;
+            }
+        }
+    }
+    return dfa;
 }
 
 void DfaBuilder::VisitNfa(const std::function<void(NFANode*)>& processor) const {
@@ -114,6 +201,34 @@ void DfaBuilder::VisitNfa(const std::function<void(NFANode*)>& processor) const 
         node_visited[node->id()] = true;
         node->ForEachEdge(add_unvisited);
     }
+}
+
+void DfaBuilder::VisitNfaGroup(const NfaGroup& group,
+                               const std::function<void(NFANode*)>& processor) const {
+    for (std::size_t i = 0; i < group.size(); ++i) {
+        if (group.test(i)) {
+            processor(nfa_nodes_[i]);
+        }
+    }
+}
+
+DfaState* DfaBuilder::CreateDfaState(Dfa& dfa, NfaGroup group) const {
+    auto new_id = static_cast<DfaState::id_t>(dfa.states.size());
+
+    bool accepted = false;
+    std::string token{};
+    // 判断是否是终结结点
+    VisitNfaGroup(group, [&](NFANode* node) {
+        if (node->accepted()) {
+            accepted = true;
+            token = nfa_node_to_token_[node->id()];
+        }
+    });
+    // 创建结点
+    auto dfa_state = std::make_unique<DfaState>(new_id, group, accepted, token);
+    dfa_state->class_id_to_next.resize(class_count_, -1);  //初始化为失败状态
+    dfa.states.push_back(std::move(dfa_state));
+    return dfa.states.back().get();
 }
 
 }  // namespace cc

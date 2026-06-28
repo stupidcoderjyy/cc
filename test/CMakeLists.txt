@@ -6,6 +6,8 @@ set(TARGET cc_test)
 add_executable(${TARGET}
         lex/dfa_builder_build_char_class_map_test.cpp
         lex/dfa_builder_epsilon_closure_test.cpp
+        lex/dfa_builder_next_test.cpp
+        lex/dfa_builder_build_dfa_test.cpp
         lex/nfa_regex_parser_test.cpp
 )
 
