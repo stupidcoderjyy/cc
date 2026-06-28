@@ -18,12 +18,12 @@ public:
         kChar = 3,
     };
 
-    NFANode();
+    NFANode() = default;
 
-    static int node_count() { return node_count_; }
     void AddEpsilonEdge(NFANode* next);
     void AddEpsilonEdge(NFANode* next1, NFANode* next2);
     void AddCharEdge(CharPredicate predicate, NFANode* next);
+    void ForEachEdge(const std::function<void(NFANode* cur, NFANode* nxt)> &func);
 
     int id() const { return id_; }
     bool accepted() const { return accepted_; }
@@ -32,6 +32,7 @@ public:
     NFANode* next2() const { return next2_; }
     const CharPredicate& predicate() const { return predicate_; }
 
+    void set_id(int id) { id_ = id; }
     void set_accepted(bool accepted) { accepted_ = accepted; }
 
     std::string ToString() const;
@@ -40,14 +41,12 @@ public:
     bool operator!=(const NFANode& other) const { return id_ != other.id_; }
 
 private:
-    static int node_count_;
-
     EdgeType edge_type_ = EdgeType::kNoEdge;
     NFANode* next1_ = nullptr;
     NFANode* next2_ = nullptr;
     CharPredicate predicate_ = nullptr;
     bool accepted_ = false;
-    const int id_;
+    int id_ = -1;    //由NfaRegexParser管理
 };
 
 }  // namespace cc

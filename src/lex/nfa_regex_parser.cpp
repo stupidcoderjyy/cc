@@ -14,8 +14,12 @@ void NFARegexParser::Register(std::string regex, const std::string& token) {
     }
     input_ = std::make_unique<StringInput>(regex);
     regex_ = std::move(regex);
-    nfa_pool_.push_back(Expr(false));
-    NFA& regex_nfa = nfa_pool_.back();
+    auto regex_nfa = Expr(false);
+    // 将NFA结点所有权从NFA对象转到Parser，设置结点id
+    nodes_.reserve(nodes_.size() + regex_nfa.nodes().size());
+    for (auto& node : regex_nfa.nodes()) {
+        MoveNode(node);
+    }
     SetAcceptedNode(regex_nfa, token);
     if (!root_node_) {
         root_node_ = regex_nfa.start();
@@ -23,7 +27,7 @@ void NFARegexParser::Register(std::string regex, const std::string& token) {
         auto new_start = std::make_unique<NFANode>();
         new_start->AddEpsilonEdge(regex_nfa.start(), root_node_);
         root_node_ = new_start.get();
-        owned_nodes_.push_back(std::move(new_start));
+        MoveNode(new_start);
     }
 }
 
@@ -258,6 +262,11 @@ CharPredicate NFARegexParser::Escape() const {
         default:
             return nullptr;
     }
+}
+
+void NFARegexParser::MoveNode(std::unique_ptr<NFANode>& node) {
+    node->set_id(static_cast<int>(nodes_.size()));
+    nodes_.push_back(std::move(node));
 }
 
 void NFARegexParser::Err(const std::string& cause) const {

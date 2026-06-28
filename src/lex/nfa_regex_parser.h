@@ -18,14 +18,12 @@ public:
 
     NFANode* root_node() const { return root_node_; }
     std::vector<std::string> node_id_to_token() const { return node_id_to_token_; }
-
+    const std::vector<std::unique_ptr<NFANode>>& nodes() const { return nodes_; }
 private:
     std::unique_ptr<AbstractInput> input_;
     std::string regex_;
-    // 每个正则表达式对应的NFA
-    std::vector<NFA> nfa_pool_;
     NFANode* root_node_ = nullptr;
-    std::vector<std::unique_ptr<NFANode>> owned_nodes_;
+    std::vector<std::unique_ptr<NFANode>> nodes_;
     std::vector<std::string> node_id_to_token_;
     std::unordered_set<char> singles_;
 
@@ -37,6 +35,7 @@ private:
     CharPredicate Clazz(bool exclude);
     CharPredicate MinClazzPredicate() const;
     CharPredicate Escape() const;
+    void MoveNode(std::unique_ptr<NFANode>& node);
 
     [[noreturn]] void Err(const std::string& cause) const;
 };

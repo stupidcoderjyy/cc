@@ -4,8 +4,9 @@ include(GoogleTest)
 set(TARGET cc_test)
 
 add_executable(${TARGET}
-        test_nfa.cpp
-        dfa_builder_test.cpp
+        lex/dfa_builder_build_char_class_map_test.cpp
+        lex/dfa_builder_epsilon_closure_test.cpp
+        lex/nfa_regex_parser_test.cpp
 )
 
 target_link_libraries(${TARGET} PRIVATE

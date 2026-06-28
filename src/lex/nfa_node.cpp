@@ -4,10 +4,6 @@
 
 namespace cc {
 
-int NFANode::node_count_ = 0;
-
-NFANode::NFANode() : id_(node_count_++) {}
-
 void NFANode::AddEpsilonEdge(NFANode* next) {
     if (edge_type_ == EdgeType::kNoEdge) {
         next1_ = next;
@@ -28,6 +24,21 @@ void NFANode::AddCharEdge(CharPredicate predicate, NFANode* next) {
     predicate_ = std::move(predicate);
     next1_ = next;
     edge_type_ = EdgeType::kChar;
+}
+
+void NFANode::ForEachEdge(const std::function<void(NFANode* cur, NFANode* nxt)> &func) {
+    switch (edge_type_) {
+        case EdgeType::kSingleEpsilon:
+        case EdgeType::kChar:
+            func(this, next1_);
+            break;
+        case EdgeType::kDoubleEpsilon:
+            func(this, next1_);
+            func(this, next2_);
+            break;
+        default:
+            break;
+    }
 }
 
 std::string NFANode::ToString() const {

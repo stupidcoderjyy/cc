@@ -30,14 +30,15 @@ public:
 
     std::string ToString() const;
 
-    NFANode* start() const { return start_.get(); }
-    NFANode* end() const { return end_.get(); }
+    NFANode* start() const { return start_; }
+    NFANode* end() const { return end_; }
+    std::vector<std::unique_ptr<NFANode>>& nodes() { return nodes_; }
 
 private:
-    std::unique_ptr<NFANode> start_;
-    std::unique_ptr<NFANode> end_;
-    // 持有内部结点所有权
-    std::vector<std::unique_ptr<NFANode>> internal_nodes_;
+    NFANode* start_ = nullptr;
+    NFANode* end_ = nullptr;
+    // 持有结点所有权
+    std::vector<std::unique_ptr<NFANode>> nodes_;
 
     void MergeInternalNodes(NFA& other);
 };
