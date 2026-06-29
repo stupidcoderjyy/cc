@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "dfa_minimizer.h"
 #include "nfa_node.h"
 #include "nfa_regex_parser.h"
 
@@ -177,6 +178,10 @@ Dfa DfaBuilder::BuildDfaFromNfa() {
         }
     }
     return dfa;
+}
+
+Dfa DfaBuilder::MinimizeDfa(Dfa& dfa) const {
+    return DfaMinimizer(dfa, class_count_).Minimize();
 }
 
 void DfaBuilder::VisitNfa(const std::function<void(NFANode*)>& processor) const {

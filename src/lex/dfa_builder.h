@@ -56,6 +56,7 @@ public:
     NfaGroup EpsilonClosure(NfaGroup group);
     NfaGroup Next(int char_class, NfaGroup group);
     Dfa BuildDfaFromNfa();
+    Dfa MinimizeDfa(Dfa& dfa) const;
 
     // getter
     const std::vector<int>& char_to_class() const { return char_to_class_; }
