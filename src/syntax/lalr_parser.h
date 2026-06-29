@@ -14,13 +14,13 @@ namespace cc {
 
 // LR(0) 项：产生式ID + 圆点位置
 struct Item {
-    int prodId;
-    int dotPos;
+    int prod_id;
+    int dot_pos;
 
     bool operator==(const Item&) const = default;
     bool operator<(const Item& other) const {
-        if (prodId != other.prodId) return prodId < other.prodId;
-        return dotPos < other.dotPos;
+        if (prod_id != other.prod_id) return prod_id < other.prod_id;
+        return dot_pos < other.dot_pos;
     }
 };
 
@@ -56,6 +56,11 @@ public:
     const std::vector<LR0State>& lalr_states() const { return lalr_states_; }
     const std::vector<int>& lr0_to_lalr() const { return lr0_to_lalr_; }
 
+    // --- 前瞻符传播 (Visible for Testing) ---
+    void PropagateLookaheads();
+    using StateLookaheads = std::map<Item, SymbolSet>;
+    const std::vector<StateLookaheads>& lr0_lookaheads() const { return lr0_lookaheads_; }
+
     // 访问接口
     int IdOf(const Symbol& sym) const { return symbol_to_id_.at(sym); }
     const Symbol& SymbolOf(int id) const { return id_to_symbol_[id]; }
@@ -78,6 +83,8 @@ private:
     // LALR 合并后状态
     std::vector<LR0State> lalr_states_;
     std::vector<int> lr0_to_lalr_;
+    // 前瞻符：每个 LR(0) 状态中每项的 lookahead 集合
+    std::vector<StateLookaheads> lr0_lookaheads_;
 
     void InitSymbols();
     void BuildProductionIndex();
