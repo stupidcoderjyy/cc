@@ -49,7 +49,7 @@ using SymbolMap = std::map<Symbol, V, std::less<>>;
 using SymbolSet = std::set<Symbol, std::less<>>;
 
 struct Production {
-    int id{};                                    // 唯一编号
+    int id;                                      // 唯一编号
     Symbol head;                                 // 左部非终结符
     std::vector<Symbol> body;                    // 右部符号序列（可为空，表示 ε）
     int priority = 0;                            // 产生式自身的优先级（用于冲突解决）
@@ -57,6 +57,7 @@ struct Production {
 
     Production(int id, Symbol head, std::vector<Symbol> body, int prio, Associativity a)
         : id(id), head(std::move(head)), body(std::move(body)), priority(prio), assoc(a) {}
+    Production() : id(0), assoc() {}
 };
 
 }  // namespace cc

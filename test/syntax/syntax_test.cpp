@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by PC on 2026/6/30.
 //
 #include "syntax/syntax.h"
@@ -16,28 +16,31 @@ protected:
     Symbol plus{"+", SymbolType::kTerminal};
     Symbol star{"*", SymbolType::kTerminal};
     Symbol id{"id", SymbolType::kTerminal};
-    Symbol lparen{"(", SymbolType::kTerminal};
-    Symbol rparen{")", SymbolType::kTerminal};
 };
 
-TEST_F(SyntaxTest, AddProductionAndRetrieve) {
-    int id1 = syntax.AddProduction(E, {E, plus, T});
-    syntax.AddProduction(E, {T});
-    syntax.AddProduction(T, {T, star, F});
-    syntax.AddProduction(T, {F});
-    syntax.AddProduction(F, {lparen, E, rparen});
-    syntax.AddProduction(F, {id});
+TEST_F(SyntaxTest, RootProductionAutoInserted) {
+    // ROOT symbol is always present
+    EXPECT_EQ(syntax.root_symbol().name, "ROOT");
+    EXPECT_EQ(syntax.root_symbol().type, SymbolType::kNonTerminal);
 
-    EXPECT_EQ(syntax.productions().size(), 6);
-    EXPECT_EQ(syntax.productions()[0].id, id1);
-    EXPECT_EQ(syntax.productions()[0].head.name, "E");
-    EXPECT_EQ(syntax.productions()[0].body.size(), 3);
+    // No productions yet - ROOT insert happens on first AddProduction
+    EXPECT_TRUE(syntax.productions().empty());
+
+    int id1 = syntax.AddProduction(E, {E, plus, T});
+    // ROOT -> E 应该作为产生式0被自动插入
+    EXPECT_EQ(syntax.productions().size(), 2);
+    EXPECT_EQ(syntax.productions()[0].head.name, "ROOT");
+    EXPECT_EQ(syntax.productions()[0].body.size(), 1);
+    EXPECT_EQ(syntax.productions()[0].body[0].name, "E");
+    EXPECT_EQ(syntax.productions()[1].id, id1);
 }
 
-TEST_F(SyntaxTest, StartSymbol) {
-    syntax.SetRootSymbol(E);
-    EXPECT_EQ(syntax.root_symbol().name, "E");
-    EXPECT_EQ(syntax.root_symbol().type, SymbolType::kNonTerminal);
+TEST_F(SyntaxTest, RootProductionOnlyOnce) {
+    syntax.AddProduction(E, {E, plus, T});
+    syntax.AddProduction(T, {id});
+    // ROOT 只在首次插入一次
+    EXPECT_EQ(syntax.productions().size(), 3);
+    EXPECT_EQ(syntax.productions()[0].head.name, "ROOT");
 }
 
 TEST_F(SyntaxTest, SymbolPriorityAndAssociativity) {
@@ -56,13 +59,17 @@ TEST_F(SyntaxTest, SymbolPriorityAndAssociativity) {
 
 TEST_F(SyntaxTest, ProductionPriorityOverride) {
     int prodId = syntax.AddProduction(E, {E, plus, T});
+
+    const auto& prods = syntax.productions();
+    // ROOT 在位置0，用户产生式在位置1
+    EXPECT_EQ(prods[1].id, prodId);
+    EXPECT_EQ(prods[1].head.name, "E");
+
     syntax.SetProductionPriority(prodId, 5);
     syntax.SetProductionAssociativity(prodId, Associativity::kRight);
 
-    const auto& prods = syntax.productions();
-    ASSERT_FALSE(prods.empty());
-    EXPECT_EQ(prods[0].priority, 5);
-    EXPECT_EQ(prods[0].assoc, Associativity::kRight);
+    EXPECT_EQ(prods[1].priority, 5);
+    EXPECT_EQ(prods[1].assoc, Associativity::kRight);
 }
 
 TEST_F(SyntaxTest, ProductionPriorityOverrideOnlyTarget) {
@@ -71,9 +78,9 @@ TEST_F(SyntaxTest, ProductionPriorityOverrideOnlyTarget) {
     syntax.SetProductionPriority(prodId1, 5);
 
     const auto& prods = syntax.productions();
-    EXPECT_EQ(prods[0].priority, 5);
-    // prodId2 should not be affected
-    EXPECT_EQ(prods[1].priority, 0);
+    // ROOT=0, E->E+T=1, T->T*F=2
+    EXPECT_EQ(prods[1].priority, 5);
+    EXPECT_EQ(prods[2].priority, 0);
 }
 
 TEST_F(SyntaxTest, FindSymbolNotFound) {
@@ -84,7 +91,6 @@ TEST_F(SyntaxTest, FindSymbolNotFound) {
 }
 
 TEST_F(SyntaxTest, SetSymbolPropertiesUpdate) {
-    // SetSymbolProperties should update an already-existing symbol
     Symbol dup{"dup", SymbolType::kTerminal};
     syntax.SetSymbolPriority(dup, 10);
     syntax.SetSymbolAssociativity(dup, Associativity::kRight);
@@ -100,13 +106,10 @@ TEST_F(SyntaxTest, SetSymbolPropertiesUpdate) {
 
 TEST_F(SyntaxTest, EmptyProduction) {
     int prodId = syntax.AddProduction(E, {});
-
-    EXPECT_EQ(syntax.productions().size(), 1);
-    EXPECT_EQ(syntax.productions()[0].id, prodId);
-    EXPECT_EQ(syntax.productions()[0].head.name, "E");
-    EXPECT_TRUE(syntax.productions()[0].body.empty());
-    // Empty rhs represents an epsilon production
-    EXPECT_EQ(syntax.productions()[0].body.size(), 0);
+    // ROOT -> E (id=0) + E -> ε (id=1)
+    EXPECT_EQ(syntax.productions().size(), 2);
+    EXPECT_EQ(syntax.productions()[1].id, prodId);
+    EXPECT_TRUE(syntax.productions()[1].body.empty());
 }
 
 TEST_F(SyntaxTest, NonTerminalPriority) {
@@ -121,8 +124,7 @@ TEST_F(SyntaxTest, NonTerminalPriority) {
 }
 
 TEST_F(SyntaxTest, EofSymbolFiltered) {
-    syntax.SetRootSymbol(E);
-    // The end_symbol_ has type kEof and should not appear in terminals or non_terminals
+    // end_symbol_ has type kEof and should not appear in terminals or non_terminals
     EXPECT_EQ(syntax.end_symbol().type, SymbolType::kEof);
     const auto* found = syntax.FindSymbol("$", SymbolType::kEof);
     EXPECT_EQ(found, nullptr);

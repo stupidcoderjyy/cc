@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by PC on 2026/6/30.
 //
 #include "syntax.h"
@@ -24,31 +24,29 @@ int Syntax::AddProduction(const Symbol& head, const std::vector<Symbol>& body) {
         RegisterSymbol(sym);
     }
 
-    // 创建产生式对象，默认优先级和结合性从左部符号继承
+    // 首次注册产生式时，自动插入 ROOT -> head 作为产生式0
+    if (productions_.empty()) {
+        InsertRootProduction(head);
+    }
+
     int prod_id = next_prod_id_++;
-    Production prod(prod_id, head, body, head.priority, head.assoc);
-    productions_.push_back(prod);
+    productions_.emplace_back(prod_id, head, body, head.priority, head.assoc);
     return prod_id;
 }
 
-void Syntax::SetRootSymbol(const Symbol& root) {
-    if (root.type != SymbolType::kNonTerminal) {
-        throw std::runtime_error("StartSymbol must be a non-terminal");
-    }
-    non_terminals_.erase(root_symbol_);
-    root_symbol_ = root;
-    // 确保起始符号已被记录（若尚未添加则加入非终结符）
-    RegisterSymbol(root);
+void Syntax::InsertRootProduction(const Symbol& head) {
+    int prod_id = next_prod_id_++;
+    productions_.emplace_back(prod_id, root_symbol_, std::vector{head}, 0, Associativity::kLeft);
 }
 
 void Syntax::SetSymbolPriority(const Symbol& sym, int priority) {
     auto& map = sym.type == SymbolType::kTerminal ? terminals_ : non_terminals_;
     if (auto it = map.find(sym); it != map.end()) {
-        it->second.priority = priority;  // 更新已有符号
+        it->second.priority = priority;
     } else {
         Symbol new_sym = sym;
         new_sym.priority = priority;
-        map.emplace(new_sym, new_sym);  // 新增符号
+        map.emplace(new_sym, new_sym);
     }
 }
 

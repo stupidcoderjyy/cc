@@ -13,6 +13,7 @@ add_executable(${TARGET}
         lex/nfa_regex_parser_test.cpp
         syntax/syntax_test.cpp
         syntax/lalr_parser_compute_first_test.cpp
+        syntax/lalr_parser_lr0_test.cpp
 )
 
 target_link_libraries(${TARGET} PRIVATE

@@ -11,6 +11,7 @@ namespace cc {
 
 LALRBuilder::LALRBuilder(Syntax& syntax) : syntax_(&syntax) {
     InitSymbols();
+    BuildProductionIndex();
     ComputeFirstSets();
 }
 
@@ -21,8 +22,11 @@ void LALRBuilder::InitSymbols() {
             int id = static_cast<int>(id_to_symbol_.size());
             id_to_symbol_.push_back(s);
             symbol_to_id_[s] = id;
+            return id;
         }
+        return symbol_to_id_[s];
     };
+
     for (const auto& s : syntax_->terminals() | std::views::values) {
         add_sym(s);
     }
@@ -30,6 +34,15 @@ void LALRBuilder::InitSymbols() {
         add_sym(s);
     }
     add_sym(syntax_->end_symbol());
+}
+
+void LALRBuilder::BuildProductionIndex() {
+    symbol_to_productions_.resize(id_to_symbol_.size());
+
+    for (const auto& prod : syntax_->productions()) {
+        int nt_id = symbol_to_id_[prod.head];
+        symbol_to_productions_[nt_id].push_back(prod.id);
+    }
 }
 
 void LALRBuilder::ComputeFirstSets() {
@@ -80,6 +93,55 @@ void LALRBuilder::ComputeFirstSets() {
             }
         }
     }
+}
+
+std::set<Item> LALRBuilder::Closure(std::set<Item> items) const {
+    auto result = std::move(items);
+    std::queue<Item> worklist;
+    for (const auto& it : result) {
+        worklist.push(it);
+    }
+
+    while (!worklist.empty()) {
+        auto [prod_id, dot_pos] = worklist.front();
+        worklist.pop();
+
+        const auto& prod = syntax_->productions()[prod_id];
+        if (dot_pos >= static_cast<int>(prod.body.size())) {
+            continue;
+        }
+
+        const auto& next_sym = prod.body[dot_pos];
+        if (next_sym.type != SymbolType::kNonTerminal) {
+            continue;
+        }
+
+        for (int nt_id = symbol_to_id_.at(next_sym); int p_id : symbol_to_productions_[nt_id]) {
+            Item new_item{p_id, 0};
+            if (auto [it_unused, inserted] = result.insert(new_item); inserted) {
+                worklist.push(new_item);
+            }
+        }
+    }
+
+    return result;
+}
+
+std::set<Item> LALRBuilder::GotoFunc(const std::set<Item>& items, int symbolId) const {
+    std::set<Item> moved;
+
+    for (const auto& [prod_id, dot_pos] : items) {
+        const auto& prod = syntax_->productions()[prod_id];
+        if (dot_pos >= static_cast<int>(prod.body.size())) {
+            continue;
+        }
+        if (symbol_to_id_.at(prod.body[dot_pos]) != symbolId) {
+            continue;
+        }
+        moved.insert({prod_id, dot_pos + 1});
+    }
+
+    return Closure(std::move(moved));
 }
 
 }  // namespace cc
