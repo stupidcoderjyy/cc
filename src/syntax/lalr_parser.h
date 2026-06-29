@@ -5,14 +5,15 @@
 #ifndef CC_LALR_PARSER_H
 #define CC_LALR_PARSER_H
 #include <map>
+#include <memory>
 #include <set>
 #include <vector>
 
+#include "lalr_conflict_handler.h"
 #include "syntax.h"
 
 namespace cc {
 
-// LR(0) 项：产生式ID + 圆点位置
 struct Item {
     int prod_id;
     int dot_pos;
@@ -24,16 +25,18 @@ struct Item {
     }
 };
 
-// LR(0) 状态
 struct LR0State {
     std::set<Item> items;
-    // symbolId -> target state index
     std::map<int, int> transitions;
 };
 
 class LALRBuilder {
 public:
     explicit LALRBuilder(Syntax& syntax);
+    ~LALRBuilder();
+
+    // --- 设置冲突处理器（替换默认的 DefaultErrorHandler） ---
+    void SetConflictHandler(std::unique_ptr<LALRConflictHandler> handler);
 
     // --- FIRST 集 ---
     const SymbolSet& First(int symbolId) const { return symbol_to_first_set_[symbolId]; }
@@ -61,6 +64,11 @@ public:
     using StateLookaheads = std::map<Item, SymbolSet>;
     const std::vector<StateLookaheads>& lr0_lookaheads() const { return lr0_lookaheads_; }
 
+    // --- 分析表生成 (Visible for Testing) ---
+    void BuildParsingTable();
+    const std::vector<std::vector<Action>>& action() const { return action_; }
+    const std::vector<std::map<int, int>>& gotoT() const { return goto_; }
+
     // 访问接口
     int IdOf(const Symbol& sym) const { return symbol_to_id_.at(sym); }
     const Symbol& SymbolOf(int id) const { return id_to_symbol_[id]; }
@@ -85,10 +93,15 @@ private:
     std::vector<int> lr0_to_lalr_;
     // 前瞻符：每个 LR(0) 状态中每项的 lookahead 集合
     std::vector<StateLookaheads> lr0_lookaheads_;
+    std::vector<std::vector<Action>> action_;
+    std::vector<std::map<int, int>> goto_;
+
+    std::unique_ptr<LALRConflictHandler> conflict_handler_;
 
     void InitSymbols();
     void BuildProductionIndex();
     void ComputeFirstSets();
+    std::pair<int, Associativity> LookaheadProperties(int symbolId) const;
 };
 
 }  // namespace cc

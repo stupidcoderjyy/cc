@@ -10,6 +10,7 @@
 namespace cc {
 
 LALRBuilder::LALRBuilder(Syntax& syntax) : syntax_(&syntax) {
+    conflict_handler_ = std::make_unique<DefaultConflictHandler>();
     InitSymbols();
     BuildProductionIndex();
     ComputeFirstSets();
@@ -17,6 +18,13 @@ LALRBuilder::LALRBuilder(Syntax& syntax) : syntax_(&syntax) {
     MergeLALRStates();
     ComputeFollowSets();
     PropagateLookaheads();
+    BuildParsingTable();
+}
+
+LALRBuilder::~LALRBuilder() = default;
+
+void LALRBuilder::SetConflictHandler(std::unique_ptr<LALRConflictHandler> handler) {
+    conflict_handler_ = std::move(handler);
 }
 
 void LALRBuilder::InitSymbols() {
@@ -326,6 +334,80 @@ void LALRBuilder::PropagateLookaheads() {
                         if (lr0_lookaheads_[s][closure_item].insert(sym).second) {
                             changed = true;
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+std::pair<int, Associativity> LALRBuilder::LookaheadProperties(int symbolId) const {
+    const auto& sym = id_to_symbol_[symbolId];
+    if (auto* found = syntax_->FindSymbol(sym.name, sym.type)) {
+        return {found->priority, found->assoc};
+    }
+    return {0, Associativity::kLeft};
+}
+
+void LALRBuilder::BuildParsingTable() {
+    int num_lalr = static_cast<int>(lalr_states_.size());
+    int num_symbols = static_cast<int>(id_to_symbol_.size());
+
+    action_.assign(num_lalr, std::vector<Action>(num_symbols));
+    goto_.resize(num_lalr);
+
+    for (int lalr_s = 0; lalr_s < num_lalr; ++lalr_s) {
+        for (const auto& [sym_id, target] : lalr_states_[lalr_s].transitions) {
+            const auto& sym = id_to_symbol_[sym_id];
+            if (sym.type == SymbolType::kTerminal || sym.type == SymbolType::kEof) {
+                action_[lalr_s][sym_id] = {ActionType::kShift, target};
+            } else {
+                goto_[lalr_s][sym_id] = target;
+            }
+        }
+    }
+
+    for (int lr0_s = 0; lr0_s < static_cast<int>(lr0_states_.size()); ++lr0_s) {
+        int lalr_s = lr0_to_lalr_[lr0_s];
+
+        for (const auto& [item, la] : lr0_lookaheads_[lr0_s]) {
+            if (const auto& prod = syntax_->productions()[item.prod_id];
+                item.dot_pos != static_cast<int>(prod.body.size())) {
+                continue;
+            }
+            for (const auto& lookahead_sym : la) {
+                int sym_id = symbol_to_id_.at(lookahead_sym);
+
+                if (int root_prod_id = 0; item.prod_id == root_prod_id) {
+                    auto& cell = action_[lalr_s][sym_id];
+                    if (cell.type != ActionType::kError) {
+                        throw std::runtime_error("ACCEPT conflict in state " +
+                                                 std::to_string(lalr_s));
+                    }
+                    cell = {ActionType::kAccept, -1};
+                } else {
+                    if (auto& cell = action_[lalr_s][sym_id]; cell.type == ActionType::kError) {
+                        cell = {ActionType::kReduce, item.prod_id};
+                    } else if (cell.type == ActionType::kShift) {
+                        const auto& prod_prio = syntax_->productions()[item.prod_id];
+                        auto [la_prio, la_assoc] = LookaheadProperties(sym_id);
+                        auto result = conflict_handler_->HandleShiftReduce(
+                            lalr_s, sym_id, cell.target, item.prod_id, prod_prio.priority,
+                            prod_prio.assoc, la_prio, la_assoc);
+                        if (result == ConflictAction::kReduce) {
+                            cell = {ActionType::kReduce, item.prod_id};
+                        } else if (result == ConflictAction::kAbort) {
+                            throw std::runtime_error("Unresolved shift-reduce conflict in state " +
+                                                     std::to_string(lalr_s));
+                        }
+                    } else if (cell.type == ActionType::kReduce) {
+                        int chosen = conflict_handler_->HandleReduceReduce(
+                            lalr_s, sym_id, {cell.target, item.prod_id});
+                        if (chosen < 0) {
+                            throw std::runtime_error("Unresolved reduce-reduce conflict in state " +
+                                                     std::to_string(lalr_s));
+                        }
+                        cell = {ActionType::kReduce, chosen};
                     }
                 }
             }

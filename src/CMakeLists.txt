@@ -1,4 +1,4 @@
-set(TARGET cc_core)
+﻿set(TARGET cc_core)
 
 add_library(${TARGET} STATIC
         io/abstract_input.cpp
@@ -14,6 +14,7 @@ add_library(${TARGET} STATIC
         util/bitset_hash.h
         syntax/syntax.cpp
         syntax/lalr_parser.cpp
+        syntax/lalr_conflict_handler.cpp
 )
 add_library(cc::core ALIAS ${TARGET})
 target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
