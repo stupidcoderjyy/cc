@@ -1,4 +1,4 @@
-﻿//
+//
 // Created by PC on 2026/6/30.
 //
 
@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "lalr_conflict_handler.h"
+#include "language_setter.h"
 #include "syntax.h"
 
 namespace cc {
@@ -35,10 +36,13 @@ public:
     explicit LALRBuilder(Syntax& syntax);
     ~LALRBuilder();
 
-    // --- 设置冲突处理器（替换默认的 DefaultErrorHandler） ---
+    // --- 一体化构建 + 输出 ---
+    void Build(LanguageSetter& setter);
+
+    // --- 设置冲突处理器 ---
     void SetConflictHandler(std::unique_ptr<LALRConflictHandler> handler);
 
-    // --- FIRST 集 ---
+    // --- FIRST 集 (Visible for Testing) ---
     const SymbolSet& First(int symbolId) const { return symbol_to_first_set_[symbolId]; }
     bool HasEpsilon(int symbolId) const { return symbol_to_has_epsilon_[symbolId]; }
 
@@ -69,7 +73,9 @@ public:
     const std::vector<std::vector<Action>>& action() const { return action_; }
     const std::vector<std::map<int, int>>& gotoT() const { return goto_; }
 
-    // 访问接口
+    // --- Parse 调试专用 ---
+    bool DebugParse(const std::vector<Symbol>& input) const;
+
     int IdOf(const Symbol& sym) const { return symbol_to_id_.at(sym); }
     const Symbol& SymbolOf(int id) const { return id_to_symbol_[id]; }
     int SymbolCount() const { return static_cast<int>(id_to_symbol_.size()); }
@@ -101,6 +107,7 @@ private:
     void InitSymbols();
     void BuildProductionIndex();
     void ComputeFirstSets();
+    void OutputData(LanguageSetter& setter) const;
     std::pair<int, Associativity> LookaheadProperties(int symbolId) const;
 };
 

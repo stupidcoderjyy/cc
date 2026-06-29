@@ -1,4 +1,4 @@
-﻿//
+//
 // Created by PC on 2026/6/30.
 //
 
@@ -11,6 +11,11 @@ namespace cc {
 
 LALRBuilder::LALRBuilder(Syntax& syntax) : syntax_(&syntax) {
     conflict_handler_ = std::make_unique<DefaultConflictHandler>();
+}
+
+LALRBuilder::~LALRBuilder() = default;
+
+void LALRBuilder::Build(LanguageSetter& setter) {
     InitSymbols();
     BuildProductionIndex();
     ComputeFirstSets();
@@ -19,15 +24,15 @@ LALRBuilder::LALRBuilder(Syntax& syntax) : syntax_(&syntax) {
     ComputeFollowSets();
     PropagateLookaheads();
     BuildParsingTable();
+    OutputData(setter);
 }
-
-LALRBuilder::~LALRBuilder() = default;
 
 void LALRBuilder::SetConflictHandler(std::unique_ptr<LALRConflictHandler> handler) {
     conflict_handler_ = std::move(handler);
 }
 
 void LALRBuilder::InitSymbols() {
+    // 收集所有符号：终结符 + 非终结符 + EOF
     auto add_sym = [this](const Symbol& s) {
         if (!symbol_to_id_.contains(s)) {
             int id = static_cast<int>(id_to_symbol_.size());
@@ -411,6 +416,91 @@ void LALRBuilder::BuildParsingTable() {
                     }
                 }
             }
+        }
+    }
+}
+
+void LALRBuilder::OutputData(LanguageSetter& setter) const {
+    // 产生式
+    setter.SetProductions(syntax_->productions());
+
+    // 符号表
+    std::vector<Symbol> terms, non_terms;
+    for (const auto& s : syntax_->terminals() | std::views::values) {
+        terms.push_back(s);
+    }
+    for (const auto& s : syntax_->non_terminals() | std::views::values) {
+        non_terms.push_back(s);
+    }
+    setter.SetTerminals(terms);
+    setter.SetNonTerminals(non_terms);
+
+    // LALR 状态 + 前瞻符
+    for (int lalr_s = 0; lalr_s < static_cast<int>(lalr_states_.size()); ++lalr_s) {
+        setter.SetLALRState(lalr_s, lalr_states_[lalr_s].items);
+
+        // 合并该 LALR 状态对应的所有 LR(0) 状态的前瞻符
+        std::map<Item, SymbolSet> merged_la;
+        for (int lr0_s = 0; lr0_s < static_cast<int>(lr0_states_.size()); ++lr0_s) {
+            if (lr0_to_lalr_[lr0_s] != lalr_s) continue;
+            for (const auto& [item, la] : lr0_lookaheads_[lr0_s]) {
+                merged_la[item].insert(la.begin(), la.end());
+            }
+        }
+        setter.SetStateLookaheads(lalr_s, merged_la);
+    }
+
+    // 分析表
+    for (int s = 0; s < static_cast<int>(action_.size()); ++s) {
+        for (int sym = 0; sym < static_cast<int>(action_[s].size()); ++sym) {
+            const auto& act = action_[s][sym];
+            if (act.type != ActionType::kError) {
+                setter.SetAction(s, sym, static_cast<int>(act.type), act.target);
+            }
+        }
+        for (const auto& [sym, target] : goto_[s]) {
+            setter.SetGoto(s, sym, target);
+        }
+    }
+
+    setter.SetStartState(0);
+    setter.Finish();
+}
+
+bool LALRBuilder::DebugParse(const std::vector<Symbol>& input) const {
+    std::vector<int> state_stack;
+    state_stack.push_back(0);  // 初始 LALR 状态
+
+    size_t pos = 0;
+
+    while (true) {
+        int state = state_stack.back();
+        int lookahead_id;
+
+        if (pos < input.size()) {
+            lookahead_id = symbol_to_id_.at(input[pos]);
+        } else {
+            lookahead_id = symbol_to_id_.at(syntax_->end_symbol());
+        }
+
+        if (const auto&[type, target] = action_[state][lookahead_id]; type == ActionType::kShift) {
+            state_stack.push_back(target);
+            ++pos;
+        } else if (type == ActionType::kReduce) {
+            const auto& prod = syntax_->productions()[target];
+            int len = static_cast<int>(prod.body.size());
+            state_stack.resize(state_stack.size() - len);
+            int new_state = state_stack.back();
+            int nt_id = symbol_to_id_.at(prod.head);
+            auto git = goto_[new_state].find(nt_id);
+            if (git == goto_[new_state].end()) {
+                return false;
+            }
+            state_stack.push_back(git->second);
+        } else if (type == ActionType::kAccept) {
+            return true;
+        } else {
+            return false;  // ERROR
         }
     }
 }

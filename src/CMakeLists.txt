@@ -1,4 +1,4 @@
-﻿set(TARGET cc_core)
+set(TARGET cc_core)
 
 add_library(${TARGET} STATIC
         io/abstract_input.cpp
