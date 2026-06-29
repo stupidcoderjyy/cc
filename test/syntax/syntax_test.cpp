@@ -1,8 +1,9 @@
 //
 // Created by PC on 2026/6/30.
 //
-#include <gtest/gtest.h>
 #include "syntax/syntax.h"
+
+#include <gtest/gtest.h>
 
 using namespace cc;
 
@@ -40,7 +41,6 @@ TEST_F(SyntaxTest, StartSymbol) {
 }
 
 TEST_F(SyntaxTest, SymbolPriorityAndAssociativity) {
-    // 设置终结符优先级
     syntax.SetSymbolProperties(plus, 1, Associativity::kLeft);
     syntax.SetSymbolProperties(star, 2, Associativity::kLeft);
 
@@ -65,21 +65,79 @@ TEST_F(SyntaxTest, ProductionPriorityOverride) {
     EXPECT_EQ(prods[0].assoc, Associativity::kRight);
 }
 
+TEST_F(SyntaxTest, ProductionPriorityOverrideOnlyTarget) {
+    int prodId1 = syntax.AddProduction(E, {E, plus, T});
+    syntax.AddProduction(T, {T, star, F});
+    syntax.SetProductionPriority(prodId1, 5);
+
+    const auto& prods = syntax.productions();
+    EXPECT_EQ(prods[0].priority, 5);
+    // prodId2 should not be affected
+    EXPECT_EQ(prods[1].priority, 0);
+}
+
 TEST_F(SyntaxTest, FindSymbolNotFound) {
     const auto* found = syntax.FindSymbol("unknown", SymbolType::kTerminal);
     EXPECT_EQ(found, nullptr);
+    const auto* foundNt = syntax.FindSymbol("unknown", SymbolType::kNonTerminal);
+    EXPECT_EQ(foundNt, nullptr);
 }
 
-TEST_F(SyntaxTest, AddSymbolDuplicate) {
-    Symbol s{"dup", SymbolType::kTerminal};
-    syntax.SetSymbolPriority(s, 10);
-    syntax.SetSymbolAssociativity(s, Associativity::kRight);
-    // 再次添加相同符号，属性应保持不变（或覆盖？根据设计是忽略新属性）
-    Symbol s2{"dup", SymbolType::kTerminal, 20, Associativity::kLeft};
-    syntax.SetSymbolProperties(s2, 20, Associativity::kLeft); // 应更新为20
+TEST_F(SyntaxTest, SetSymbolPropertiesUpdate) {
+    // SetSymbolProperties should update an already-existing symbol
+    Symbol dup{"dup", SymbolType::kTerminal};
+    syntax.SetSymbolPriority(dup, 10);
+    syntax.SetSymbolAssociativity(dup, Associativity::kRight);
+
+    // Call SetSymbolProperties with new values on the same symbol
+    syntax.SetSymbolProperties(dup, 20, Associativity::kLeft);
+
     const auto* found = syntax.FindSymbol("dup", SymbolType::kTerminal);
     ASSERT_NE(found, nullptr);
-    // 因为 SetSymbolProperties 会更新已有符号，所以变为20
     EXPECT_EQ(found->priority, 20);
     EXPECT_EQ(found->assoc, Associativity::kLeft);
+}
+
+TEST_F(SyntaxTest, EmptyProduction) {
+    int prodId = syntax.AddProduction(E, {});
+
+    EXPECT_EQ(syntax.productions().size(), 1);
+    EXPECT_EQ(syntax.productions()[0].id, prodId);
+    EXPECT_EQ(syntax.productions()[0].lhs.name, "E");
+    EXPECT_TRUE(syntax.productions()[0].rhs.empty());
+    // Empty rhs represents an epsilon production
+    EXPECT_EQ(syntax.productions()[0].rhs.size(), 0);
+}
+
+TEST_F(SyntaxTest, NonTerminalPriority) {
+    Symbol stmt{"stmt", SymbolType::kNonTerminal};
+    syntax.SetSymbolProperties(stmt, 3, Associativity::kRight);
+
+    const auto* found = syntax.FindSymbol("stmt", SymbolType::kNonTerminal);
+    ASSERT_NE(found, nullptr);
+    EXPECT_EQ(found->priority, 3);
+    EXPECT_EQ(found->assoc, Associativity::kRight);
+    EXPECT_EQ(found->type, SymbolType::kNonTerminal);
+}
+
+TEST_F(SyntaxTest, EofSymbolFiltered) {
+    syntax.SetStartSymbol(E);
+    // The end_symbol_ has type kEof and should not appear in terminals or non_terminals
+    EXPECT_EQ(syntax.end_symbol().type, SymbolType::kEof);
+    const auto* found = syntax.FindSymbol("$", SymbolType::kEof);
+    EXPECT_EQ(found, nullptr);
+}
+
+TEST_F(SyntaxTest, AddProductionCollectsSymbols) {
+    syntax.AddProduction(E, {E, plus, T});
+    syntax.AddProduction(T, {id});
+
+    EXPECT_GT(syntax.terminals().size(), 0);
+    EXPECT_GT(syntax.non_terminals().size(), 0);
+    // All non-terminals used as LHS should appear in non_terminals
+    EXPECT_NE(syntax.FindSymbol("E", SymbolType::kNonTerminal), nullptr);
+    EXPECT_NE(syntax.FindSymbol("T", SymbolType::kNonTerminal), nullptr);
+    // All terminals used in RHS should appear in terminals
+    EXPECT_NE(syntax.FindSymbol("+", SymbolType::kTerminal), nullptr);
+    EXPECT_NE(syntax.FindSymbol("id", SymbolType::kTerminal), nullptr);
 }

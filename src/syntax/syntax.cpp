@@ -4,6 +4,7 @@
 #include "syntax.h"
 
 #include <algorithm>
+#include <stdexcept>
 
 namespace cc {
 
@@ -13,10 +14,10 @@ int Syntax::AddProduction(const Symbol& lhs, std::initializer_list<Symbol> rhs) 
 
 int Syntax::AddProduction(const Symbol& lhs, const std::vector<Symbol>& rhs) {
     // 将左部加入非终结符集合
-    AddSymbol(lhs);
+    RegisterSymbol(lhs);
     // 将右部所有符号加入对应的集合（终结符/非终结符）
     for (const auto& sym : rhs) {
-        AddSymbol(sym);
+        RegisterSymbol(sym);
     }
 
     // 创建产生式对象，默认优先级和结合性从左部符号继承
@@ -27,9 +28,12 @@ int Syntax::AddProduction(const Symbol& lhs, const std::vector<Symbol>& rhs) {
 }
 
 void Syntax::SetStartSymbol(const Symbol& start) {
+    if (start.type != SymbolType::kNonTerminal) {
+        throw std::runtime_error("StartSymbol must be a non-terminal");
+    }
     start_symbol_ = start;
     // 确保起始符号已被记录（若尚未添加则加入非终结符）
-    AddSymbol(start);
+    RegisterSymbol(start);
 }
 
 void Syntax::SetSymbolPriority(const Symbol& sym, int priority) {
@@ -97,7 +101,7 @@ const Symbol* Syntax::FindSymbol(const std::string& name, SymbolType type) const
     return nullptr;
 }
 
-void Syntax::AddSymbol(const Symbol& sym) {
+void Syntax::RegisterSymbol(const Symbol& sym) {
     // 忽略 EOF 符号（它单独存储，不放入终结符/非终结符集合）
     if (sym.type == SymbolType::kEof) return;
 

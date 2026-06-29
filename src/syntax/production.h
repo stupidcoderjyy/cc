@@ -4,6 +4,8 @@
 
 #ifndef CC_SYMBOL_H
 #define CC_SYMBOL_H
+#include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -39,7 +41,12 @@ struct SymbolHash {
 };
 
 template <typename V>
-using SymbolMap = std::unordered_map<Symbol, V, SymbolHash>;
+using UnorderedSymbolMap = std::unordered_map<Symbol, V, SymbolHash>;
+
+template <typename V>
+using SymbolMap = std::map<Symbol, V, std::less<>>;
+
+using SymbolSet = std::set<Symbol, std::less<>>;
 
 struct Production {
     int id{};                                    // 唯一编号

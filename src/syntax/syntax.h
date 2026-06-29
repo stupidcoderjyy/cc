@@ -33,8 +33,8 @@ public:
 
     // getter
     const std::vector<Production>& productions() const { return productions_; }
-    const SymbolMap<Symbol>& terminals() const { return terminals_; }
-    const SymbolMap<Symbol>& non_terminals() const { return non_terminals_; }
+    const UnorderedSymbolMap<Symbol>& terminals() const { return terminals_; }
+    const UnorderedSymbolMap<Symbol>& non_terminals() const { return non_terminals_; }
     const Symbol& start_symbol() const { return start_symbol_; }
     const Symbol& end_symbol() const { return end_symbol_; }
 
@@ -42,14 +42,14 @@ public:
 
 private:
     std::vector<Production> productions_;
-    SymbolMap<Symbol> terminals_;
-    SymbolMap<Symbol> non_terminals_;
+    UnorderedSymbolMap<Symbol> terminals_;
+    UnorderedSymbolMap<Symbol> non_terminals_;
     Symbol start_symbol_;
     Symbol end_symbol_{"$", SymbolType::kEof};
     int next_prod_id_ = 0;
 
     // 内部辅助：添加符号到集合，维护终结符/非终结符分类
-    void AddSymbol(const Symbol& sym);
+    void RegisterSymbol(const Symbol& sym);
 };
 
 }  // namespace cc
