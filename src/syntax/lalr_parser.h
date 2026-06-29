@@ -45,7 +45,16 @@ public:
 
     // --- LR(0) 项集族 (Visible for Testing) ---
     void BuildCanonicalCollection();
-    const std::vector<LR0State>& states() const { return states_; }
+    const std::vector<LR0State>& lr0_states() const { return lr0_states_; }
+
+    // --- FOLLOW 集 (Visible for Testing) ---
+    void ComputeFollowSets();
+    const SymbolSet& Follow(int symbolId) const { return symbol_to_follow_set_[symbolId]; }
+
+    // --- LALR 合并 (Visible for Testing) ---
+    void MergeLALRStates();
+    const std::vector<LR0State>& lalr_states() const { return lalr_states_; }
+    const std::vector<int>& lr0_to_lalr() const { return lr0_to_lalr_; }
 
     // 访问接口
     int IdOf(const Symbol& sym) const { return symbol_to_id_.at(sym); }
@@ -60,10 +69,15 @@ private:
     // FIRST 集结果
     std::vector<SymbolSet> symbol_to_first_set_;
     std::vector<bool> symbol_to_has_epsilon_;
+    // FOLLOW 集结果
+    std::vector<SymbolSet> symbol_to_follow_set_;
     // 非终结符 → 其产生式ID列表
     std::vector<std::vector<int>> symbol_to_productions_;
     // LR(0) 项集族
-    std::vector<LR0State> states_;
+    std::vector<LR0State> lr0_states_;
+    // LALR 合并后状态
+    std::vector<LR0State> lalr_states_;
+    std::vector<int> lr0_to_lalr_;
 
     void InitSymbols();
     void BuildProductionIndex();
