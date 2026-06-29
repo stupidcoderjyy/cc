@@ -14,6 +14,7 @@ add_executable(${TARGET}
         syntax/syntax_test.cpp
         syntax/lalr_parser_compute_first_test.cpp
         syntax/lalr_parser_lr0_test.cpp
+        syntax/lalr_parser_canonical_test.cpp
 )
 
 target_link_libraries(${TARGET} PRIVATE

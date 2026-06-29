@@ -13,10 +13,10 @@ LALRBuilder::LALRBuilder(Syntax& syntax) : syntax_(&syntax) {
     InitSymbols();
     BuildProductionIndex();
     ComputeFirstSets();
+    BuildCanonicalCollection();
 }
 
 void LALRBuilder::InitSymbols() {
-    // 收集所有符号：终结符 + 非终结符 + EOF
     auto add_sym = [this](const Symbol& s) {
         if (!symbol_to_id_.contains(s)) {
             int id = static_cast<int>(id_to_symbol_.size());
@@ -50,21 +50,18 @@ void LALRBuilder::ComputeFirstSets() {
     symbol_to_first_set_.assign(n, {});
     symbol_to_has_epsilon_.assign(n, false);
 
-    // 终结符（含 EOF）的 FIRST 集 = {自身}
     for (int i = 0; i < n; ++i) {
         if (const auto& sym = id_to_symbol_[i]; sym.type != SymbolType::kNonTerminal) {
             symbol_to_first_set_[i].insert(sym);
         }
     }
 
-    // 空产生式直接导致左部可空
     for (const auto& prod : syntax_->productions()) {
         if (prod.body.empty()) {
             symbol_to_has_epsilon_[symbol_to_id_[prod.head]] = true;
         }
     }
 
-    // 不动点迭代
     bool changed = true;
     while (changed) {
         changed = false;
@@ -74,7 +71,6 @@ void LALRBuilder::ComputeFirstSets() {
 
             for (const auto& s_body : prod.body) {
                 int s_body_id = symbol_to_id_[s_body];
-                // 将 FIRST(s_body) 加入 FIRST(head)
                 for (const auto& s : symbol_to_first_set_[s_body_id]) {
                     if (symbol_to_first_set_[head_id].insert(s).second) {
                         changed = true;
@@ -86,7 +82,6 @@ void LALRBuilder::ComputeFirstSets() {
                 }
             }
 
-            // 若右部全部可空，则左部也可空
             if (has_epsilon && !symbol_to_has_epsilon_[head_id]) {
                 symbol_to_has_epsilon_[head_id] = true;
                 changed = true;
@@ -116,7 +111,8 @@ std::set<Item> LALRBuilder::Closure(std::set<Item> items) const {
             continue;
         }
 
-        for (int nt_id = symbol_to_id_.at(next_sym); int p_id : symbol_to_productions_[nt_id]) {
+        int nt_id = symbol_to_id_.at(next_sym);
+        for (int p_id : symbol_to_productions_[nt_id]) {
             Item new_item{p_id, 0};
             if (auto [it_unused, inserted] = result.insert(new_item); inserted) {
                 worklist.push(new_item);
@@ -142,6 +138,49 @@ std::set<Item> LALRBuilder::GotoFunc(const std::set<Item>& items, int symbolId) 
     }
 
     return Closure(std::move(moved));
+}
+
+void LALRBuilder::BuildCanonicalCollection() {
+    // items -> state index，利用 std::set<Item> 自带的 operator<
+    std::map<std::set<Item>, int> seen;
+    std::queue<int> worklist;
+
+    // 初始状态：ROOT -> ·S 的闭包
+    std::set<Item> start_items = Closure({{0, 0}});
+    states_.push_back({start_items, {}});
+    seen.emplace(start_items, 0);
+    worklist.push(0);
+
+    while (!worklist.empty()) {
+        int cur = worklist.front();
+        worklist.pop();
+
+        // 收集当前状态中所有圆点后的符号（去重）
+        std::set<int> next_symbols;
+        for (const auto& item : states_[cur].items) {
+            const auto& prod = syntax_->productions()[item.prodId];
+            if (item.dotPos < static_cast<int>(prod.body.size())) {
+                next_symbols.insert(symbol_to_id_.at(prod.body[item.dotPos]));
+            }
+        }
+
+        // 对每个符号求 GOTO
+        for (int sym_id : next_symbols) {
+            auto next_items = GotoFunc(states_[cur].items, sym_id);
+            if (next_items.empty()) continue;
+
+            int target = -1;
+            if (auto it = seen.find(next_items); it != seen.end()) {
+                target = it->second;
+            } else {
+                target = static_cast<int>(states_.size());
+                seen.emplace(next_items, target);
+                states_.push_back({std::move(next_items), {}});
+                worklist.push(target);
+            }
+            states_[cur].transitions[sym_id] = target;
+        }
+    }
 }
 
 }  // namespace cc
