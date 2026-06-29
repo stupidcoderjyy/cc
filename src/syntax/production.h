@@ -50,13 +50,13 @@ using SymbolSet = std::set<Symbol, std::less<>>;
 
 struct Production {
     int id{};                                    // 唯一编号
-    Symbol lhs;                                  // 左部非终结符
-    std::vector<Symbol> rhs;                     // 右部符号序列（可为空，表示 ε）
+    Symbol head;                                 // 左部非终结符
+    std::vector<Symbol> body;                    // 右部符号序列（可为空，表示 ε）
     int priority = 0;                            // 产生式自身的优先级（用于冲突解决）
     Associativity assoc = Associativity::kLeft;  // 产生式结合性
 
-    Production(int id, Symbol lhs, std::vector<Symbol> rhs, int prio, Associativity a)
-        : id(id), lhs(std::move(lhs)), rhs(std::move(rhs)), priority(prio), assoc(a) {}
+    Production(int id, Symbol head, std::vector<Symbol> body, int prio, Associativity a)
+        : id(id), head(std::move(head)), body(std::move(body)), priority(prio), assoc(a) {}
 };
 
 }  // namespace cc

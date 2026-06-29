@@ -14,7 +14,6 @@ add_library(${TARGET} STATIC
         util/bitset_hash.h
         syntax/syntax.cpp
         syntax/lalr_parser.cpp
-        syntax/production.cpp
 )
 add_library(cc::core ALIAS ${TARGET})
 target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

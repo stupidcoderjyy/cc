@@ -8,32 +8,37 @@
 
 namespace cc {
 
-int Syntax::AddProduction(const Symbol& lhs, std::initializer_list<Symbol> rhs) {
-    return AddProduction(lhs, std::vector(rhs.begin(), rhs.end()));
+Syntax::Syntax() {
+    RegisterSymbol(root_symbol_);
 }
 
-int Syntax::AddProduction(const Symbol& lhs, const std::vector<Symbol>& rhs) {
+int Syntax::AddProduction(const Symbol& head, std::initializer_list<Symbol> body) {
+    return AddProduction(head, std::vector(body.begin(), body.end()));
+}
+
+int Syntax::AddProduction(const Symbol& head, const std::vector<Symbol>& body) {
     // 将左部加入非终结符集合
-    RegisterSymbol(lhs);
+    RegisterSymbol(head);
     // 将右部所有符号加入对应的集合（终结符/非终结符）
-    for (const auto& sym : rhs) {
+    for (const auto& sym : body) {
         RegisterSymbol(sym);
     }
 
     // 创建产生式对象，默认优先级和结合性从左部符号继承
     int prod_id = next_prod_id_++;
-    Production prod(prod_id, lhs, rhs, lhs.priority, lhs.assoc);
+    Production prod(prod_id, head, body, head.priority, head.assoc);
     productions_.push_back(prod);
     return prod_id;
 }
 
-void Syntax::SetStartSymbol(const Symbol& start) {
-    if (start.type != SymbolType::kNonTerminal) {
+void Syntax::SetRootSymbol(const Symbol& root) {
+    if (root.type != SymbolType::kNonTerminal) {
         throw std::runtime_error("StartSymbol must be a non-terminal");
     }
-    start_symbol_ = start;
+    non_terminals_.erase(root_symbol_);
+    root_symbol_ = root;
     // 确保起始符号已被记录（若尚未添加则加入非终结符）
-    RegisterSymbol(start);
+    RegisterSymbol(root);
 }
 
 void Syntax::SetSymbolPriority(const Symbol& sym, int priority) {

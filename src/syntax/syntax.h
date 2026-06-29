@@ -11,15 +11,15 @@ namespace cc {
 
 class Syntax {
 public:
-    Syntax() = default;
+    Syntax();
     ~Syntax() = default;
 
     // 添加产生式 lhs -> rhs，返回产生式ID
-    int AddProduction(const Symbol& lhs, std::initializer_list<Symbol> rhs);
-    int AddProduction(const Symbol& lhs, const std::vector<Symbol>& rhs);
+    int AddProduction(const Symbol& head, std::initializer_list<Symbol> body);
+    int AddProduction(const Symbol& head, const std::vector<Symbol>& body);
 
     // 设置文法的起始符号
-    void SetStartSymbol(const Symbol& start);
+    void SetRootSymbol(const Symbol& root);
 
     // 若符号已存在，更新其优先级和结合性；否则添加为新符号并设置
     void SetSymbolPriority(const Symbol& sym, int priority);
@@ -35,7 +35,7 @@ public:
     const std::vector<Production>& productions() const { return productions_; }
     const UnorderedSymbolMap<Symbol>& terminals() const { return terminals_; }
     const UnorderedSymbolMap<Symbol>& non_terminals() const { return non_terminals_; }
-    const Symbol& start_symbol() const { return start_symbol_; }
+    const Symbol& root_symbol() const { return root_symbol_; }
     const Symbol& end_symbol() const { return end_symbol_; }
 
     const Symbol* FindSymbol(const std::string& name, SymbolType type) const;
@@ -44,7 +44,7 @@ private:
     std::vector<Production> productions_;
     UnorderedSymbolMap<Symbol> terminals_;
     UnorderedSymbolMap<Symbol> non_terminals_;
-    Symbol start_symbol_;
+    Symbol root_symbol_;
     Symbol end_symbol_{"$", SymbolType::kEof};
     int next_prod_id_ = 0;
 

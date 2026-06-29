@@ -30,14 +30,14 @@ TEST_F(SyntaxTest, AddProductionAndRetrieve) {
 
     EXPECT_EQ(syntax.productions().size(), 6);
     EXPECT_EQ(syntax.productions()[0].id, id1);
-    EXPECT_EQ(syntax.productions()[0].lhs.name, "E");
-    EXPECT_EQ(syntax.productions()[0].rhs.size(), 3);
+    EXPECT_EQ(syntax.productions()[0].head.name, "E");
+    EXPECT_EQ(syntax.productions()[0].body.size(), 3);
 }
 
 TEST_F(SyntaxTest, StartSymbol) {
-    syntax.SetStartSymbol(E);
-    EXPECT_EQ(syntax.start_symbol().name, "E");
-    EXPECT_EQ(syntax.start_symbol().type, SymbolType::kNonTerminal);
+    syntax.SetRootSymbol(E);
+    EXPECT_EQ(syntax.root_symbol().name, "E");
+    EXPECT_EQ(syntax.root_symbol().type, SymbolType::kNonTerminal);
 }
 
 TEST_F(SyntaxTest, SymbolPriorityAndAssociativity) {
@@ -103,10 +103,10 @@ TEST_F(SyntaxTest, EmptyProduction) {
 
     EXPECT_EQ(syntax.productions().size(), 1);
     EXPECT_EQ(syntax.productions()[0].id, prodId);
-    EXPECT_EQ(syntax.productions()[0].lhs.name, "E");
-    EXPECT_TRUE(syntax.productions()[0].rhs.empty());
+    EXPECT_EQ(syntax.productions()[0].head.name, "E");
+    EXPECT_TRUE(syntax.productions()[0].body.empty());
     // Empty rhs represents an epsilon production
-    EXPECT_EQ(syntax.productions()[0].rhs.size(), 0);
+    EXPECT_EQ(syntax.productions()[0].body.size(), 0);
 }
 
 TEST_F(SyntaxTest, NonTerminalPriority) {
@@ -121,7 +121,7 @@ TEST_F(SyntaxTest, NonTerminalPriority) {
 }
 
 TEST_F(SyntaxTest, EofSymbolFiltered) {
-    syntax.SetStartSymbol(E);
+    syntax.SetRootSymbol(E);
     // The end_symbol_ has type kEof and should not appear in terminals or non_terminals
     EXPECT_EQ(syntax.end_symbol().type, SymbolType::kEof);
     const auto* found = syntax.FindSymbol("$", SymbolType::kEof);

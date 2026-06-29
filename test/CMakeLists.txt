@@ -1,4 +1,4 @@
-enable_testing()
+﻿enable_testing()
 include(GoogleTest)
 
 set(TARGET cc_test)
@@ -12,6 +12,7 @@ add_executable(${TARGET}
         lex/dfa_builder_test.cpp
         lex/nfa_regex_parser_test.cpp
         syntax/syntax_test.cpp
+        syntax/lalr_parser_compute_first_test.cpp
 )
 
 target_link_libraries(${TARGET} PRIVATE
