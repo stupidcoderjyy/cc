@@ -1,4 +1,4 @@
-﻿#ifndef CC_NFA_H_
+#ifndef CC_NFA_H_
 #define CC_NFA_H_
 
 #include <memory>

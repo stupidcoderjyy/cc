@@ -1,4 +1,4 @@
-﻿#include "nfa.h"
+#include "nfa.h"
 
 #include <sstream>
 #include <utility>

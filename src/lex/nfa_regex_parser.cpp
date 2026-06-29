@@ -1,4 +1,4 @@
-﻿#include "nfa_regex_parser.h"
+#include "nfa_regex_parser.h"
 
 #include <sstream>
 #include <stdexcept>
