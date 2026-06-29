@@ -8,15 +8,15 @@
 
 namespace cc {
 
-class Dfa;
+class DFA;
 
-class DfaMinimizer {
+class DFAMinimizer {
 public:
-    DfaMinimizer(Dfa& dfa, int char_class_count);
-    Dfa Minimize();
+    DFAMinimizer(DFA& dfa, int char_class_count);
+    DFA Minimize();
 
 private:
-    Dfa* dfa_;                                             // 原始 DFA
+    DFA* dfa_;                                             // 原始 DFA
     int char_class_count_{};                               // 字符类数
     std::vector<std::vector<int>> blocks_;                 // 每个块的状态列表
     std::vector<int> block_of_state_;                      // 状态 -> 块 ID

@@ -16,7 +16,7 @@
 
 namespace cc {
 
-DfaBuilder::DfaBuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_token)
+DFABuilder::DFABuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_token)
     : root_node_(root_node), nfa_node_to_token_(std::move(nfa_node_to_token)) {
     VisitNfa([this](NFANode* node) {
         if (node->id() >= nfa_nodes_.size()) {
@@ -26,7 +26,7 @@ DfaBuilder::DfaBuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_
     });
 }
 
-void DfaBuilder::Build(DfaSetter& setter) {
+void DFABuilder::Build(DFASetter& setter) {
     BuildCharClassMap();
     ComputeNfaCharClassMask();
     auto dfa = BuildDfaFromNfa();
@@ -34,7 +34,7 @@ void DfaBuilder::Build(DfaSetter& setter) {
     OutputData(minimized, setter);
 }
 
-void DfaBuilder::BuildCharClassMap() {
+void DFABuilder::BuildCharClassMap() {
     // 收集所有CHAR边上的谓词
     std::vector<CharPredicate> predicates;
     VisitNfa([&predicates](NFANode* node) {
@@ -80,7 +80,7 @@ void DfaBuilder::BuildCharClassMap() {
     }
 }
 
-void DfaBuilder::ComputeNfaCharClassMask() {
+void DFABuilder::ComputeNfaCharClassMask() {
     if (class_count_ > kMaxCharClass) {
         throw std::runtime_error("too many character classes");
     }
@@ -103,7 +103,7 @@ void DfaBuilder::ComputeNfaCharClassMask() {
     });
 }
 
-NfaGroup DfaBuilder::EpsilonClosure(NfaGroup group) {
+NFAGroup DFABuilder::EpsilonClosure(NFAGroup group) {
     if (epsilon_cache_.contains(group)) {
         return epsilon_cache_[group];
     }
@@ -128,8 +128,8 @@ NfaGroup DfaBuilder::EpsilonClosure(NfaGroup group) {
     return result;
 }
 
-NfaGroup DfaBuilder::Next(int char_class, NfaGroup group) {
-    NfaGroup result;
+NFAGroup DFABuilder::Next(int char_class, NFAGroup group) {
+    NFAGroup result;
     VisitNfaGroup(group, [&](NFANode* node) {
         if (node->edge_type() != NFANode::EdgeType::kChar) {
             return;
@@ -141,14 +141,14 @@ NfaGroup DfaBuilder::Next(int char_class, NfaGroup group) {
     return EpsilonClosure(result);
 }
 
-Dfa DfaBuilder::BuildDfaFromNfa() {
-    Dfa dfa;
-    std::stack<DfaState*> unprocessed;
-    NfaGroupMap<DfaState::id_t> nfa_group_to_dfa_state;
+DFA DFABuilder::BuildDfaFromNfa() {
+    DFA dfa;
+    std::stack<DFAState*> unprocessed;
+    NFAGroupMap<DFAState::id_t> nfa_group_to_dfa_state;
 
     {
         // 创建初始DFA状态，并加入待处理
-        NfaGroup start_nfa_group{};
+        NFAGroup start_nfa_group{};
         start_nfa_group.set(root_node_->id(), true);
         start_nfa_group = EpsilonClosure(start_nfa_group);
         auto* start_dfa_state = CreateDfaState(dfa, start_nfa_group);
@@ -160,11 +160,11 @@ Dfa DfaBuilder::BuildDfaFromNfa() {
     while (!unprocessed.empty()) {
         auto* dfa_state = unprocessed.top();
         unprocessed.pop();
-        NfaGroup next_nfa_group;
+        NFAGroup next_nfa_group;
         for (int cid = 0; cid < class_count_; ++cid) {
             next_nfa_group = Next(cid, dfa_state->nfa_group);
             if (!next_nfa_group.none()) {
-                DfaState::id_t next_id;
+                DFAState::id_t next_id;
                 if (nfa_group_to_dfa_state.contains(next_nfa_group)) {
                     next_id = nfa_group_to_dfa_state[next_nfa_group];
                 } else {
@@ -180,11 +180,11 @@ Dfa DfaBuilder::BuildDfaFromNfa() {
     return dfa;
 }
 
-Dfa DfaBuilder::MinimizeDfa(Dfa& dfa) const {
-    return DfaMinimizer(dfa, class_count_).Minimize();
+DFA DFABuilder::MinimizeDfa(DFA& dfa) const {
+    return DFAMinimizer(dfa, class_count_).Minimize();
 }
 
-void DfaBuilder::VisitNfa(const std::function<void(NFANode*)>& processor) const {
+void DFABuilder::VisitNfa(const std::function<void(NFANode*)>& processor) const {
     std::vector<bool> node_visited;
     node_visited.reserve(kMaxNfaGroups);
     std::vector unvisited{root_node_};
@@ -208,7 +208,7 @@ void DfaBuilder::VisitNfa(const std::function<void(NFANode*)>& processor) const 
     }
 }
 
-void DfaBuilder::VisitNfaGroup(const NfaGroup& group,
+void DFABuilder::VisitNfaGroup(const NFAGroup& group,
                                const std::function<void(NFANode*)>& processor) const {
     for (std::size_t i = 0; i < group.size(); ++i) {
         if (group.test(i)) {
@@ -217,8 +217,8 @@ void DfaBuilder::VisitNfaGroup(const NfaGroup& group,
     }
 }
 
-DfaState* DfaBuilder::CreateDfaState(Dfa& dfa, NfaGroup group) const {
-    auto new_id = static_cast<DfaState::id_t>(dfa.states.size());
+DFAState* DFABuilder::CreateDfaState(DFA& dfa, NFAGroup group) const {
+    auto new_id = static_cast<DFAState::id_t>(dfa.states.size());
 
     bool accepted = false;
     std::string token{};
@@ -230,13 +230,13 @@ DfaState* DfaBuilder::CreateDfaState(Dfa& dfa, NfaGroup group) const {
         }
     });
     // 创建结点
-    auto dfa_state = std::make_unique<DfaState>(new_id, group, accepted, token);
+    auto dfa_state = std::make_unique<DFAState>(new_id, group, accepted, token);
     dfa_state->class_id_to_next.resize(class_count_, -1);  //初始化为失败状态
     dfa.states.push_back(std::move(dfa_state));
     return dfa.states.back().get();
 }
 
-void DfaBuilder::OutputData(Dfa& dfa, DfaSetter& setter) const {
+void DFABuilder::OutputData(DFA& dfa, DFASetter& setter) const {
     // 1. 字符类信息（必须输出）
     setter.SetCharClassCount(class_count_);
     setter.SetCharToClass(char_to_class_);  // char_to_class_ 大小为 kMaxChars
@@ -247,7 +247,7 @@ void DfaBuilder::OutputData(Dfa& dfa, DfaSetter& setter) const {
 
     // 3. 遍历所有状态
     for (const auto& state_ptr : dfa.states) {
-        const DfaState& state = *state_ptr;
+        const DFAState& state = *state_ptr;
 
         // 设置状态接受信息
         setter.SetStateInfo(state.id, state.is_accepted, state.token);

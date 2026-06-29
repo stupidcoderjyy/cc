@@ -9,8 +9,8 @@
 namespace cc {
 
 // 辅助函数：从解析器构建 DfaBuilder，完成预计算
-static std::unique_ptr<DfaBuilder> MakeBuilderFromParser(NFARegexParser& parser) {
-    auto builder = std::make_unique<DfaBuilder>(parser.root_node(), parser.node_id_to_token());
+static std::unique_ptr<DFABuilder> MakeBuilderFromParser(NFARegexParser& parser) {
+    auto builder = std::make_unique<DFABuilder>(parser.root_node(), parser.node_id_to_token());
     builder->BuildCharClassMap();
     builder->ComputeNfaCharClassMask();
     return builder;  // 移动语义，无需 std::move
@@ -22,7 +22,7 @@ TEST(DfaMinimizerTest, StarA) {
     parser.Register("a*", "star");
 
     auto builder = MakeBuilderFromParser(parser);
-    Dfa raw = builder->BuildDfaFromNfa();
+    DFA raw = builder->BuildDfaFromNfa();
     auto [states, start_state] = builder->MinimizeDfa(raw);
 
     EXPECT_EQ(states.size(), 1);
@@ -47,7 +47,7 @@ TEST(DfaMinimizerTest, OrAB) {
     parser.Register("a|b", "or");
 
     auto builder = MakeBuilderFromParser(parser);
-    Dfa raw = builder->BuildDfaFromNfa();
+    DFA raw = builder->BuildDfaFromNfa();
     auto [states, start_state] = builder->MinimizeDfa(raw);
 
     EXPECT_EQ(states.size(), 2);
@@ -80,7 +80,7 @@ TEST(DfaMinimizerTest, ConcatAB) {
     parser.Register("ab", "concat");
 
     auto builder = MakeBuilderFromParser(parser);
-    Dfa raw = builder->BuildDfaFromNfa();
+    DFA raw = builder->BuildDfaFromNfa();
     auto [states, start_state] = builder->MinimizeDfa(raw);
 
     EXPECT_EQ(states.size(), 3);
@@ -113,7 +113,7 @@ TEST(DfaMinimizerTest, StarAB) {
     parser.Register("(a|b)*", "star_ab");
 
     auto builder = MakeBuilderFromParser(parser);
-    Dfa raw = builder->BuildDfaFromNfa();
+    DFA raw = builder->BuildDfaFromNfa();
     auto [states, start_state] = builder->MinimizeDfa(raw);
 
     EXPECT_EQ(states.size(), 1);
@@ -141,7 +141,7 @@ TEST(DfaMinimizerTest, StarAOrStarB) {
     parser.Register("a*|b*", "star_or");
 
     auto builder = MakeBuilderFromParser(parser);
-    Dfa raw = builder->BuildDfaFromNfa();
+    DFA raw = builder->BuildDfaFromNfa();
     auto [states, start_state] = builder->MinimizeDfa(raw);
 
     int raw_count = static_cast<int>(raw.states.size());

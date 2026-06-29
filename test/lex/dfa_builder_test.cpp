@@ -12,7 +12,7 @@
 namespace cc {
 
 // ---------- 辅助类：收集 DFA 输出数据 ----------
-class CollectingDfaSetter : public DfaSetter {
+class CollectingDfaSetter : public DFASetter {
 public:
     int char_class_count = -1;
     std::vector<int> char_to_class;
@@ -76,7 +76,7 @@ TEST(DfaBuilderOutputTest, OrAB) {
     NFARegexParser parser;
     parser.Register("a|b", "or_token");
 
-    DfaBuilder builder(parser.root_node(), parser.node_id_to_token());
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
     CollectingDfaSetter setter;
     builder.Build(setter);  // 一体化构建并输出
 
@@ -101,7 +101,7 @@ TEST(DfaBuilderOutputTest, StarA) {
     NFARegexParser parser;
     parser.Register("a*", "star_token");
 
-    DfaBuilder builder(parser.root_node(), parser.node_id_to_token());
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
     CollectingDfaSetter setter;
     builder.Build(setter);
 
@@ -121,7 +121,7 @@ TEST(DfaBuilderOutputTest, ConcatAB) {
     NFARegexParser parser;
     parser.Register("ab", "concat_token");
 
-    DfaBuilder builder(parser.root_node(), parser.node_id_to_token());
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
     CollectingDfaSetter setter;
     builder.Build(setter);
 
@@ -148,7 +148,7 @@ TEST(DfaBuilderOutputTest, StarAB) {
     NFARegexParser parser;
     parser.Register("(a|b)*", "star_ab_token");
 
-    DfaBuilder builder(parser.root_node(), parser.node_id_to_token());
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
     CollectingDfaSetter setter;
     builder.Build(setter);
 
@@ -171,7 +171,7 @@ TEST(DfaBuilderOutputTest, StarAOrStarB) {
     NFARegexParser parser;
     parser.Register("a*|b*", "star_or_token");
 
-    DfaBuilder builder(parser.root_node(), parser.node_id_to_token());
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
     CollectingDfaSetter setter;
     builder.Build(setter);
 

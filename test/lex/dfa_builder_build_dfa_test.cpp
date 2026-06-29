@@ -9,8 +9,8 @@
 namespace cc {
 
 // 辅助：从解析器构建 DfaBuilder
-static std::unique_ptr<DfaBuilder> MakeBuilderFromParser(NFARegexParser& parser) {
-    auto builder = std::make_unique<DfaBuilder>(parser.root_node(), parser.node_id_to_token());
+static std::unique_ptr<DFABuilder> MakeBuilderFromParser(NFARegexParser& parser) {
+    auto builder = std::make_unique<DFABuilder>(parser.root_node(), parser.node_id_to_token());
     builder->BuildCharClassMap();
     builder->ComputeNfaCharClassMask();
     return std::move(builder);

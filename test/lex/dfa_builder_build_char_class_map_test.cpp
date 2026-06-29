@@ -38,7 +38,7 @@ protected:
 TEST_F(DfaBuilderBuildCharClassMapTest, SinglePredicate) {
     NFARegexParser parser;
     parser.Register("[0-9]", "");
-    DfaBuilder builder(parser.root_node(), {});
+    DFABuilder builder(parser.root_node(), {});
     builder.BuildCharClassMap();
 
     EXPECT_EQ(builder.class_count(), 2);
@@ -52,7 +52,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, TwoDistinctPredicates) {
     NFARegexParser parser;
     parser.Register("[0-9]", "");
     parser.Register("[a-zA-Z]", "");
-    DfaBuilder builder(parser.root_node(), {});
+    DFABuilder builder(parser.root_node(), {});
     builder.BuildCharClassMap();
 
     EXPECT_EQ(builder.class_count(), 3);  // digit, alpha, other
@@ -67,7 +67,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, SamePredicates) {
     NFARegexParser parser;
     parser.Register("[0-9]", "");
     parser.Register("[0-9]", "");
-    DfaBuilder builder(parser.root_node(), {});
+    DFABuilder builder(parser.root_node(), {});
     builder.BuildCharClassMap();
 
     // 预期仍然只有两类：digit 和 non-digit
@@ -84,7 +84,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, ThreeDistinctPredicates) {
     parser.Register("[0-9]", "");
     parser.Register("[a-zA-Z]", "");
     parser.Register("[ \t\n]", "");
-    DfaBuilder builder(parser.root_node(), {});
+    DFABuilder builder(parser.root_node(), {});
     builder.BuildCharClassMap();
 
     // 四种组合：digit, alpha, space, other

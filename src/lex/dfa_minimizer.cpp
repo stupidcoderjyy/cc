@@ -8,10 +8,10 @@
 
 namespace cc {
 
-DfaMinimizer::DfaMinimizer(Dfa& dfa, int char_class_count)
+DFAMinimizer::DFAMinimizer(DFA& dfa, int char_class_count)
     : dfa_(&dfa), char_class_count_(char_class_count) {}
 
-Dfa DfaMinimizer::Minimize() {
+DFA DFAMinimizer::Minimize() {
     if (dfa_->states.empty()) {
         return {};
     }
@@ -55,7 +55,7 @@ Dfa DfaMinimizer::Minimize() {
     }
 
     // 构建最小化 DFA
-    Dfa min_dfa;
+    DFA min_dfa;
     min_dfa.states.clear();  // 移除 Dfa 默认构造函数添加的空状态
 
     int new_n = static_cast<int>(blocks_.size());
@@ -66,7 +66,7 @@ Dfa DfaMinimizer::Minimize() {
         int rep = blocks_[b][0];
         const auto& old_state = dfa_->states[rep];
         auto new_state =
-            std::make_unique<DfaState>(b, NfaGroup(), old_state->is_accepted, old_state->token);
+            std::make_unique<DFAState>(b, NFAGroup(), old_state->is_accepted, old_state->token);
         new_state->class_id_to_next.assign(char_class_count_, -1);
         min_dfa.states.push_back(std::move(new_state));
     }
@@ -89,7 +89,7 @@ Dfa DfaMinimizer::Minimize() {
 
 // ---------- 子函数实现 ----------
 
-void DfaMinimizer::InitializePartition() {
+void DFAMinimizer::InitializePartition() {
     const auto& states = dfa_->states;
     int n = static_cast<int>(states.size());
 
@@ -126,7 +126,7 @@ void DfaMinimizer::InitializePartition() {
     }
 }
 
-void DfaMinimizer::BuildIncoming() {
+void DFAMinimizer::BuildIncoming() {
     int block_count = static_cast<int>(blocks_.size());
     incoming_.assign(char_class_count_, std::vector<std::vector<int>>(block_count));
 
@@ -141,7 +141,7 @@ void DfaMinimizer::BuildIncoming() {
     }
 }
 
-bool DfaMinimizer::SplitBlock(int Y, const std::vector<int>& intersect,
+bool DFAMinimizer::SplitBlock(int Y, const std::vector<int>& intersect,
                               const std::vector<int>& diff) {
     // 两者均非空
     if (intersect.empty() || diff.empty()) return false;
@@ -170,7 +170,7 @@ bool DfaMinimizer::SplitBlock(int Y, const std::vector<int>& intersect,
     return true;
 }
 
-void DfaMinimizer::UpdateIncomingAfterSplit(int old_block, int new_block1, int new_block2) {
+void DFAMinimizer::UpdateIncomingAfterSplit(int old_block, int new_block1, int new_block2) {
     // new_block1 和 new_block2 分别为分裂后的两个块 ID（这里 old_block 和 new_block）
     for (int c = 0; c < char_class_count_; ++c) {
         auto& sources = incoming_[c][old_block];

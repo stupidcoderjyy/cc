@@ -12,9 +12,9 @@ namespace cc {
  * 抽象接口：用于输出 DFA 构建结果。
  * 派生类可实现为文件写入、代码生成、序列化等。
  */
-class DfaSetter {
+class DFASetter {
 public:
-    virtual ~DfaSetter() = default;
+    virtual ~DFASetter() = default;
 
     // 设置字符类总数（可选，但可用于验证）
     virtual void SetCharClassCount(int count) = 0;
