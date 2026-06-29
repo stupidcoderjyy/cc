@@ -10,6 +10,7 @@
 #include <memory>
 #include <utility>
 
+#include "dfa_setter.h"
 #include "util/bitset_hash.h"
 
 namespace cc {
@@ -47,11 +48,10 @@ class NFARegexParser;
 class DfaBuilder {
 public:
     explicit DfaBuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_token);
-    void Build();
+    void Build(DfaSetter& setter);
 
     // Visible For Testing
     void BuildCharClassMap();
-    void ComputeClassRepresentativeChar();
     void ComputeNfaCharClassMask();
     NfaGroup EpsilonClosure(NfaGroup group);
     NfaGroup Next(int char_class, NfaGroup group);
@@ -78,6 +78,7 @@ private:
     void VisitNfa(const std::function<void(NFANode*)>& processor) const;
     void VisitNfaGroup(const NfaGroup& group, const std::function<void(NFANode*)>& processor) const;
     DfaState* CreateDfaState(Dfa& dfa, NfaGroup group) const;
+    void OutputData(Dfa& dfa, DfaSetter& setter) const;
 };
 
 }  // namespace cc

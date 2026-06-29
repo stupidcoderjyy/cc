@@ -12,7 +12,6 @@ namespace cc {
 std::unique_ptr<DfaBuilder> MakeBuilderFromParser(NFARegexParser& parser) {
     auto builder = std::make_unique<DfaBuilder>(parser.root_node(), parser.node_id_to_token());
     builder->BuildCharClassMap();
-    builder->ComputeClassRepresentativeChar();
     builder->ComputeNfaCharClassMask();
     return std::move(builder);
 }

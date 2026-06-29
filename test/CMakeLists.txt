@@ -9,6 +9,7 @@ add_executable(${TARGET}
         lex/dfa_builder_next_test.cpp
         lex/dfa_builder_build_dfa_test.cpp
         lex/dfa_builder_minimize_dfa_test.cpp
+        lex/dfa_builder_test.cpp
         lex/nfa_regex_parser_test.cpp
 )
 

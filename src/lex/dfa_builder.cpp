@@ -26,11 +26,12 @@ DfaBuilder::DfaBuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_
     });
 }
 
-void DfaBuilder::Build() {
+void DfaBuilder::Build(DfaSetter& setter) {
     BuildCharClassMap();
-    ComputeClassRepresentativeChar();
     ComputeNfaCharClassMask();
-    BuildDfaFromNfa();
+    auto dfa = BuildDfaFromNfa();
+    auto minimized = MinimizeDfa(dfa);
+    OutputData(minimized, setter);
 }
 
 void DfaBuilder::BuildCharClassMap() {
@@ -66,9 +67,8 @@ void DfaBuilder::BuildCharClassMap() {
     }
     char_to_class_ = std::move(char_to_class);
     class_count_ = static_cast<int>(class_map.size());
-}
 
-void DfaBuilder::ComputeClassRepresentativeChar() {
+    // 预计算字符类代表字符
     class_representative_char_.resize(class_count_);
     for (int cid = 0; cid < class_count_; ++cid) {
         for (char c = 0; c < kMaxChars; ++c) {
@@ -234,6 +234,35 @@ DfaState* DfaBuilder::CreateDfaState(Dfa& dfa, NfaGroup group) const {
     dfa_state->class_id_to_next.resize(class_count_, -1);  //初始化为失败状态
     dfa.states.push_back(std::move(dfa_state));
     return dfa.states.back().get();
+}
+
+void DfaBuilder::OutputData(Dfa& dfa, DfaSetter& setter) const {
+    // 1. 字符类信息（必须输出）
+    setter.SetCharClassCount(class_count_);
+    setter.SetCharToClass(char_to_class_);  // char_to_class_ 大小为 kMaxChars
+
+    // 2. DFA 基本结构
+    setter.SetDfaStatesCount(static_cast<int>(dfa.states.size()));
+    setter.SetStartState(dfa.start_state);
+
+    // 3. 遍历所有状态
+    for (const auto& state_ptr : dfa.states) {
+        const DfaState& state = *state_ptr;
+
+        // 设置状态接受信息
+        setter.SetStateInfo(state.id, state.is_accepted, state.token);
+
+        // 遍历每个字符类，输出转移
+        for (int cid = 0; cid < class_count_; ++cid) {
+            // 仅当有转移时调用（-1 表示无转移，可根据 setter 设计选择是否输出）
+            if (int target = state.class_id_to_next[cid]; target != -1) {
+                setter.SetTransition(state.id, cid, target);
+            }
+        }
+    }
+
+    // 4. 可选收尾
+    setter.Finish();
 }
 
 }  // namespace cc

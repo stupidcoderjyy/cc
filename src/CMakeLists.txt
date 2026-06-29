@@ -10,6 +10,7 @@ add_library(${TARGET} STATIC
         lex/nfa_regex_parser.cpp
         lex/dfa_builder.cpp
         lex/dfa_minimizer.cpp
+        lex/dfa_setter.h
         util/bitset_hash.h
 )
 add_library(cc::core ALIAS ${TARGET})
