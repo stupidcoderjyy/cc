@@ -1,9 +1,10 @@
-enable_testing()
+﻿enable_testing()
 include(GoogleTest)
 
-set(TARGET cc_test)
-
-add_executable(${TARGET}
+set(TEST_SRC_COMMON
+        common/compile/lexer_test.cpp
+)
+set(TEST_SRC_LEX
         lex/dfa_builder_build_char_class_map_test.cpp
         lex/dfa_builder_epsilon_closure_test.cpp
         lex/dfa_builder_next_test.cpp
@@ -11,6 +12,8 @@ add_executable(${TARGET}
         lex/dfa_builder_minimize_dfa_test.cpp
         lex/dfa_builder_test.cpp
         lex/nfa_regex_parser_test.cpp
+)
+set(TEST_SRC_SYNTAX
         syntax/syntax_test.cpp
         syntax/lalr_parser_compute_first_test.cpp
         syntax/lalr_parser_lr0_test.cpp
@@ -22,11 +25,22 @@ add_executable(${TARGET}
         syntax/lalr_parser_parse_test.cpp
 )
 
-target_link_libraries(${TARGET} PRIVATE
-        cc::core
-        GTest::gtest_main
+add_executable(cc_test_common ${TEST_SRC_COMMON})
+add_executable(cc_test_lex ${TEST_SRC_LEX})
+add_executable(cc_test_syntax ${TEST_SRC_SYNTAX})
+add_executable(cc_test_all
+        ${TEST_SRC_COMMON}
+        ${TEST_SRC_LEX}
+        ${TEST_SRC_SYNTAX}
 )
 
-gtest_discover_tests(${TARGET})
-
-add_dependencies(${TARGET} format)
+set(TARGETS cc_test_common cc_test_lex cc_test_syntax cc_test_all)
+foreach(TARGET IN LISTS TARGETS)
+    target_link_libraries(${TARGET} PRIVATE
+            cc::core
+            cc::common
+            GTest::gtest_main
+    )
+    gtest_discover_tests(${TARGET})
+    add_dependencies(${TARGET} format)
+endforeach()

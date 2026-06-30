@@ -5,20 +5,17 @@
 #ifndef CC_DFA_BUILDER_H
 #define CC_DFA_BUILDER_H
 #include <bitset>
-#include <climits>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <utility>
 
+#include "cc_constants.h"
 #include "dfa_setter.h"
 #include "util/bitset_hash.h"
 
 namespace cc {
 
-static constexpr int kMaxChars = CHAR_MAX;  // 可输入的最大字符
-static constexpr int kMaxPredicates = 128;  // 最大字符集数
-static constexpr int kMaxNfaGroups = 128;   // 最大NFA状态组数量
-static constexpr int kMaxCharClass = 64;    // 最大字符类数量
 typedef std::bitset<kMaxNfaGroups> NFAGroup;
 typedef std::bitset<kMaxCharClass> CharClassBitMask;
 
@@ -47,9 +44,10 @@ class NFARegexParser;
 //https://chat.deepseek.com/share/u04wclbb8ulsd2yibr
 class DFABuilder {
 public:
-    explicit DFABuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_token);
-    void Build(DFASetter& setter);
-
+    explicit DFABuilder(NFARegexParser& parser,
+                        const std::optional<DFASetter*>& setter = std::nullopt);
+    DFABuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_token,
+               const std::optional<DFASetter*>& setter = std::nullopt);
     // Visible For Testing
     void BuildCharClassMap();
     void ComputeNfaCharClassMask();
@@ -74,11 +72,12 @@ private:
     std::vector<int> shared_stack_;
     // 不持有结点所有权
     std::vector<NFANode*> nfa_nodes_;
+    DFA dfa_;
 
     void VisitNfa(const std::function<void(NFANode*)>& processor) const;
     void VisitNfaGroup(const NFAGroup& group, const std::function<void(NFANode*)>& processor) const;
     DFAState* CreateDfaState(DFA& dfa, NFAGroup group) const;
-    void OutputData(DFA& dfa, DFASetter& setter) const;
+    void OutputData(DFASetter& setter) const;
 };
 
 }  // namespace cc

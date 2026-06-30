@@ -6,6 +6,7 @@
 #define CC_LALR_PARSER_H
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -33,11 +34,9 @@ struct LR0State {
 
 class LALRBuilder {
 public:
-    explicit LALRBuilder(Syntax& syntax);
+    explicit LALRBuilder(Syntax& syntax,
+                         const std::optional<LanguageSetter*>& setter = std::nullopt);
     ~LALRBuilder();
-
-    // --- 一体化构建 + 输出 ---
-    void Build(LanguageSetter& setter);
 
     // --- 设置冲突处理器 ---
     void SetConflictHandler(std::unique_ptr<LALRConflictHandler> handler);

@@ -7,6 +7,7 @@
 
 #include <unordered_map>
 
+#include "cc_constants.h"
 #include "lex/nfa_regex_parser.h"
 
 namespace cc {
@@ -21,9 +22,11 @@ public:
     std::unordered_map<int, std::pair<bool, std::string>> state_info;
     std::unordered_map<int, std::unordered_map<int, int>> transitions;
 
+    CollectingDfaSetter() { char_to_class.resize(kMaxChars); }
+
     void SetCharClassCount(int count) override { char_class_count = count; }
 
-    void SetCharToClass(const std::vector<int>& mapping) override { char_to_class = mapping; }
+    void SetCharToClass(int ch, int class_id) override { char_to_class[ch] = class_id; }
 
     void SetDfaStatesCount(int count) override { state_count = count; }
 
@@ -76,9 +79,8 @@ TEST(DfaBuilderOutputTest, OrAB) {
     NFARegexParser parser;
     parser.Register("a|b", "or_token");
 
-    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
     CollectingDfaSetter setter;
-    builder.Build(setter);  // 一体化构建并输出
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token(), &setter);
 
     // 验证字符类
     EXPECT_EQ(setter.char_class_count, 3);  // 'a', 'b', 其他
@@ -101,9 +103,8 @@ TEST(DfaBuilderOutputTest, StarA) {
     NFARegexParser parser;
     parser.Register("a*", "star_token");
 
-    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
     CollectingDfaSetter setter;
-    builder.Build(setter);
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token(), &setter);
 
     EXPECT_EQ(setter.char_class_count, 2);
     int class_a = setter.GetClassForChar('a');
@@ -121,9 +122,8 @@ TEST(DfaBuilderOutputTest, ConcatAB) {
     NFARegexParser parser;
     parser.Register("ab", "concat_token");
 
-    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
     CollectingDfaSetter setter;
-    builder.Build(setter);
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token(), &setter);
 
     EXPECT_EQ(setter.char_class_count, 3);
     int class_a = setter.GetClassForChar('a');
@@ -148,9 +148,8 @@ TEST(DfaBuilderOutputTest, StarAB) {
     NFARegexParser parser;
     parser.Register("(a|b)*", "star_ab_token");
 
-    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
     CollectingDfaSetter setter;
-    builder.Build(setter);
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token(), &setter);
 
     EXPECT_EQ(setter.char_class_count, 3);
     int class_a = setter.GetClassForChar('a');
@@ -171,9 +170,8 @@ TEST(DfaBuilderOutputTest, StarAOrStarB) {
     NFARegexParser parser;
     parser.Register("a*|b*", "star_or_token");
 
-    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
     CollectingDfaSetter setter;
-    builder.Build(setter);
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token(), &setter);
 
     EXPECT_GE(setter.state_count, 2);
     EXPECT_EQ(setter.start_state, 0);

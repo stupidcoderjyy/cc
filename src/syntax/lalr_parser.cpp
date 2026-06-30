@@ -9,13 +9,9 @@
 
 namespace cc {
 
-LALRBuilder::LALRBuilder(Syntax& syntax) : syntax_(&syntax) {
+LALRBuilder::LALRBuilder(Syntax& syntax, const std::optional<LanguageSetter*>& setter)
+    : syntax_(&syntax) {
     conflict_handler_ = std::make_unique<DefaultConflictHandler>();
-}
-
-LALRBuilder::~LALRBuilder() = default;
-
-void LALRBuilder::Build(LanguageSetter& setter) {
     InitSymbols();
     BuildProductionIndex();
     ComputeFirstSets();
@@ -24,8 +20,12 @@ void LALRBuilder::Build(LanguageSetter& setter) {
     ComputeFollowSets();
     PropagateLookaheads();
     BuildParsingTable();
-    OutputData(setter);
+    if (setter.has_value()) {
+        OutputData(*setter.value());
+    }
 }
+
+LALRBuilder::~LALRBuilder() = default;
 
 void LALRBuilder::SetConflictHandler(std::unique_ptr<LALRConflictHandler> handler) {
     conflict_handler_ = std::move(handler);
@@ -483,7 +483,7 @@ bool LALRBuilder::DebugParse(const std::vector<Symbol>& input) const {
             lookahead_id = symbol_to_id_.at(syntax_->end_symbol());
         }
 
-        if (const auto&[type, target] = action_[state][lookahead_id]; type == ActionType::kShift) {
+        if (const auto& [type, target] = action_[state][lookahead_id]; type == ActionType::kShift) {
             state_stack.push_back(target);
             ++pos;
         } else if (type == ActionType::kReduce) {

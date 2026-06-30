@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <utility>
 
+#include "cc_constants.h"
 #include "io/string_input.h"
 
 namespace cc {
@@ -31,21 +32,22 @@ void NFARegexParser::Register(std::string regex, const std::string& token) {
     }
 }
 
-void NFARegexParser::RegisterSingle(std::initializer_list<char> chs) {
+void NFARegexParser::RegisterSingles(std::initializer_list<char> chs) {
+    if (!singles_.empty()) {
+        throw std::runtime_error("singles already registered");
+    }
+    singles_.insert(chs);
+    std::ostringstream oss;
+    oss << '[';
     for (char ch : chs) {
-        if (static_cast<unsigned char>(ch) > 128) {
-            throw std::invalid_argument("ASCII only");
-        }
-        if (singles_.contains(ch)) {
-            continue;
-        }
-        singles_.insert(ch);
         if (std::isalnum(ch)) {
-            Register({ch}, "single");
+            oss << ch;
         } else {
-            Register(std::string("\\") + ch, "single");
+            oss << '\\' << ch;
         }
     }
+    oss << ']';
+    Register(oss.str(), "single");
 }
 
 void NFARegexParser::SetAcceptedNode(NFA& target, const std::string& token) {
@@ -107,32 +109,32 @@ NFA NFARegexParser::Seq() {
 NFA NFARegexParser::Atom() {
     input_->Retract();
     int b = input_->Read();
-    CharPredicate p = nullptr;
+    std::bitset<kMaxChars> bitset;
     switch (b) {
         case '[':
             if (input_->Available() && input_->Forward() == '^') {
                 input_->Read();
-                p = Clazz(true);
+                Clazz(bitset, true);
             } else {
-                p = Clazz(false);
+                Clazz(bitset, false);
             }
             break;
         case '\\':
-            p = Escape();
+            Escape(bitset);
             break;
         case '*':
         case '?':
         case '+':
             Err("invalid closure symbol");
+        case '.':
+            bitset.set();
+            break;
         default:
-            p = [b](int c) { return c == b; };
+            bitset.set(b);
             break;
     }
-    if (!p) {
-        Err("invalid predicate");
-    }
     NFA target;
-    target.AndAtom(std::move(p));
+    target.AndAtom([bitset](int ch) { return bitset.test(ch); });
     return CheckClosure(std::move(target));
 }
 
@@ -156,120 +158,107 @@ NFA NFARegexParser::CheckClosure(NFA target) const {
     return target;
 }
 
-CharPredicate NFARegexParser::Clazz(bool exclude) {
-    CharPredicate result = nullptr;
+void NFARegexParser::Clazz(std::bitset<kMaxChars>& bitset, bool exclude) {
     while (input_->Available()) {
         switch (input_->Read()) {
             case '[': {
                 //排除模式只作用于最外层
-                CharPredicate inner = Clazz(false);
-                if (!inner) {
-                    return nullptr;
-                }
-                if (!result) {
-                    result = std::move(inner);
-                } else {
-                    result = [a = std::move(result), b = std::move(inner)](int c) {
-                        return a(c) || b(c);
-                    };
-                }
+                Clazz(bitset, false);
                 break;
             }
             case ']':
-                if (exclude) {
-                    if (!result) {
-                        Err("empty character class");
-                    }
-                    return [p = std::move(result)](int c) { return !p(c); };
+                if (!bitset.any()) {
+                    Err("empty character class");
                 }
-                return result;
+                if (exclude) {
+                    bitset.flip();
+                }
+                return;
             default: {
                 input_->Retract();
-                CharPredicate p;
                 if (input_->Forward() == '\\') {
                     input_->Read();
-                    p = Escape();
+                    Escape(bitset);
                 } else {
-                    p = MinClazzPredicate();
-                }
-                if (!p) {
-                    return nullptr;
-                }
-                if (!result) {
-                    result = std::move(p);
-                } else {
-                    result = [a = std::move(result), p = std::move(p)](int c) {
-                        return a(c) || p(c);
-                    };
+                    MinClazzPredicate(bitset);
                 }
                 break;
             }
         }
     }
-    return result;
 }
 
-CharPredicate NFARegexParser::MinClazzPredicate() const {
+void NFARegexParser::MinClazzPredicate(std::bitset<kMaxChars>& bitset) const {
     int b = input_->Read();
     if (!input_->Available()) {
-        return nullptr;
+        Err("incomplete class");
     }
     if (int b1 = input_->Read(); b1 == '-') {
         if (!input_->Available()) {
-            return nullptr;
+            Err("incomplete class");
         }
         if (int b2 = input_->Read(); b2 == '[' || b2 == ']') {
             input_->Retract();
-            return [b](int c) { return c == b || c == '-'; };
+            bitset.set(b);
+            bitset.set('-');
         } else {
-            return [b, b2](int c) { return c >= b && c <= b2; };
+            SetBitset(bitset, b, b2);
         }
     }
     input_->Retract();
-    return [b](int c) { return c == b; };
+    bitset.set(b);
 }
 
-CharPredicate NFARegexParser::Escape() const {
+void NFARegexParser::Escape(std::bitset<kMaxChars>& bitset) const {
     if (!input_->Available()) {
         Err("incomplete escape");
     }
     switch (int e = input_->Read()) {
         case 'D':
         case 'd':
-            return [](int c) { return c >= '0' && c <= '9'; };
+            SetBitset(bitset, '0', '9');
+            break;
         case 'W':
         case 'w':
-            return [](int c) {
-                return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
-                       c == '_';
-            };
+            SetBitset(bitset, 'a', 'z');
+            SetBitset(bitset, 'A', 'Z');
+            SetBitset(bitset, '0', '9');
+            bitset.set('_');
         case 'U':
         case 'u':
-            return [](int c) {
-                return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
-            };
+            SetBitset(bitset, 'a', 'z');
+            SetBitset(bitset, 'A', 'Z');
+            SetBitset(bitset, '0', '9');
         case 'H':
         case 'h':
-            return [](int c) {
-                return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-            };
+            SetBitset(bitset, 'a', 'f');
+            SetBitset(bitset, 'A', 'F');
+            SetBitset(bitset, '0', '9');
         case 'A':
         case 'a':
-            return [](int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); };
-        case '.':
-            return [](int) { return true; };
+            SetBitset(bitset, 'a', 'z');
+            SetBitset(bitset, 'A', 'Z');
         case 'n':
-            return [](int c) { return c == '\n'; };
+            bitset.set('\n');
         case 't':
-            return [](int c) { return c == '\t'; };
+            bitset.set('\t');
         default:
-            return [e](int c) { return c == e; };
+            bitset.set(e);
     }
 }
 
 void NFARegexParser::MoveNode(std::unique_ptr<NFANode>& node) {
     node->set_id(static_cast<int>(nodes_.size()));
     nodes_.push_back(std::move(node));
+}
+
+void NFARegexParser::SetBitset(std::bitset<kMaxChars>& bitset, int begin, int end) {
+    if (begin < 0) begin = 0;
+    if (end > kMaxChars) end = kMaxChars;
+    if (begin >= end) return;
+    while (begin < end) {
+        bitset.set(begin++);
+    }
 }
 
 void NFARegexParser::Err(const std::string& cause) const {

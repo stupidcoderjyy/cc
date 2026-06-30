@@ -28,7 +28,8 @@ public:
 
     // 输出 LALR 状态（每状态的项集和前瞻符）
     virtual void SetLALRState(int stateId, const std::set<Item>& items) = 0;
-    virtual void SetStateLookaheads(int stateId, const std::map<Item, std::set<Symbol, std::less<>>>& la) = 0;
+    virtual void SetStateLookaheads(int stateId,
+                                    const std::map<Item, std::set<Symbol, std::less<>>>& la) = 0;
 
     // 输出分析表
     virtual void SetAction(int stateId, int symbolId, int type, int target) = 0;

@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by PC on 2026/6/28.
 //
 
@@ -15,7 +15,6 @@ protected:
     // 辅助函数：检查所有字符是否按签名正确分组
     static void CheckClasses(const std::vector<int>& char_to_class, int class_count,
                              const std::vector<CharPredicate>& predicates) {
-        // 计算每个字符的签名向量，映射到类ID，验证一致性
         std::unordered_map<std::vector<bool>, int> signature_to_class;
         for (int c = 0; c < kMaxChars; ++c) {
             std::vector<bool> sig;
@@ -38,8 +37,7 @@ protected:
 TEST_F(DfaBuilderBuildCharClassMapTest, SinglePredicate) {
     NFARegexParser parser;
     parser.Register("[0-9]", "");
-    DFABuilder builder(parser.root_node(), {});
-    builder.BuildCharClassMap();
+    DFABuilder builder(parser);
 
     EXPECT_EQ(builder.class_count(), 2);
     auto pred = [](int c) { return c >= '0' && c <= '9'; };
@@ -52,8 +50,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, TwoDistinctPredicates) {
     NFARegexParser parser;
     parser.Register("[0-9]", "");
     parser.Register("[a-zA-Z]", "");
-    DFABuilder builder(parser.root_node(), {});
-    builder.BuildCharClassMap();
+    DFABuilder builder(parser);
 
     EXPECT_EQ(builder.class_count(), 3);  // digit, alpha, other
     auto digit = [](int c) { return c >= '0' && c <= '9'; };
@@ -67,10 +64,8 @@ TEST_F(DfaBuilderBuildCharClassMapTest, SamePredicates) {
     NFARegexParser parser;
     parser.Register("[0-9]", "");
     parser.Register("[0-9]", "");
-    DFABuilder builder(parser.root_node(), {});
-    builder.BuildCharClassMap();
+    DFABuilder builder(parser);
 
-    // 预期仍然只有两类：digit 和 non-digit
     EXPECT_EQ(builder.class_count(), 2);
     auto digit1 = [](int c) { return c >= '0' && c <= '9'; };
     auto digit2 = [](int c) { return c >= '0' && c <= '9'; };
@@ -84,15 +79,62 @@ TEST_F(DfaBuilderBuildCharClassMapTest, ThreeDistinctPredicates) {
     parser.Register("[0-9]", "");
     parser.Register("[a-zA-Z]", "");
     parser.Register("[ \t\n]", "");
-    DFABuilder builder(parser.root_node(), {});
-    builder.BuildCharClassMap();
+    DFABuilder builder(parser);
 
-    // 四种组合：digit, alpha, space, other
     EXPECT_EQ(builder.class_count(), 4);
     auto digit = [](int c) { return c >= '0' && c <= '9'; };
     auto alpha = [](int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); };
     auto space = [](int c) { return c == ' ' || c == '\t' || c == '\n'; };
     std::vector<CharPredicate> predicates = {digit, alpha, space};
+    CheckClasses(builder.char_to_class(), builder.class_count(), predicates);
+}
+
+// 用例5：复杂组合（数字、标识符、字符串、单字符运算符合为一个字符类）
+//
+// RegisterSingles 将所有单字符拼为 [\+\-\*\=...] 一个字符类，共产生 6 个谓词：
+//   p1: [0-9]          → 数字
+//   p2: [a-zA-Z_]       → 标识符首字符
+//   p3: [a-zA-Z0-9_]   → 标识符后续字符（是 p2 的超集）
+//   p4: "              → 引号本身
+//   p5: [^"]           → 非引号（p4 的取反）
+//   p6: [\+\-\*\=...] → 单字符运算符合集
+//
+// 各字符的签名（p1-p6）：
+//   数字 '0'-'9'     : {T, F, T, F, T, F}  → class 0
+//   字母 'a'-'Z', '_': {F, T, T, F, T, F}  → class 1
+//   引号 '"'          : {F, F, F, T, F, F}  → class 2
+//   运算符 + - * ...  : {F, F, F, F, T, T}  → class 3
+//   其他（空格、NUL）  : {F, F, F, F, T, F}  → class 4
+TEST_F(DfaBuilderBuildCharClassMapTest, MultiplePredicates) {
+    NFARegexParser parser;
+    parser.Register(R"([0-9]+)", "number");
+    parser.Register(R"([a-zA-Z_][a-zA-Z0-9_]*)", "alnum");
+    parser.Register(R"("[^"]*")", "string");
+    parser.RegisterSingles(
+        {'+', '-', '*', '/', '=', '<', '>', '!', '(', ')', '{', '}', '[', ']', ';', ',', '.'});
+    DFABuilder builder(parser);
+
+    // 6 个互不等价的谓词产生 5 种字符签名
+    EXPECT_EQ(builder.class_count(), 5);
+
+    auto p_digit = [](int c) { return c >= '0' && c <= '9'; };
+    auto p_alpha_us = [](int c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    };
+    auto p_alnum_us = [](int c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+               c == '_';
+    };
+    auto p_quote = [](int c) { return c == '"'; };
+    auto p_not_quote = [](int c) { return c != '"'; };
+    auto p_singles = [](int c) {
+        return c == '+' || c == '-' || c == '*' || c == '/' || c == '=' || c == '<' || c == '>' ||
+               c == '!' || c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']' ||
+               c == ';' || c == ',' || c == '.';
+    };
+
+    std::vector<CharPredicate> predicates = {p_digit, p_alpha_us,  p_alnum_us,
+                                             p_quote, p_not_quote, p_singles};
     CheckClasses(builder.char_to_class(), builder.class_count(), predicates);
 }
 

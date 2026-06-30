@@ -16,7 +16,11 @@
 
 namespace cc {
 
-DFABuilder::DFABuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_token)
+DFABuilder::DFABuilder(NFARegexParser& parser, const std::optional<DFASetter*>& setter)
+    : DFABuilder(parser.root_node(), parser.node_id_to_token(), setter) {}
+
+DFABuilder::DFABuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_token,
+                       const std::optional<DFASetter*>& setter)
     : root_node_(root_node), nfa_node_to_token_(std::move(nfa_node_to_token)) {
     VisitNfa([this](NFANode* node) {
         if (node->id() >= nfa_nodes_.size()) {
@@ -24,14 +28,13 @@ DFABuilder::DFABuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_
         }
         nfa_nodes_[node->id()] = node;
     });
-}
-
-void DFABuilder::Build(DFASetter& setter) {
     BuildCharClassMap();
     ComputeNfaCharClassMask();
     auto dfa = BuildDfaFromNfa();
-    auto minimized = MinimizeDfa(dfa);
-    OutputData(minimized, setter);
+    dfa_ = MinimizeDfa(dfa);
+    if (setter.has_value()) {
+        OutputData(*setter.value());
+    }
 }
 
 void DFABuilder::BuildCharClassMap() {
@@ -236,17 +239,19 @@ DFAState* DFABuilder::CreateDfaState(DFA& dfa, NFAGroup group) const {
     return dfa.states.back().get();
 }
 
-void DFABuilder::OutputData(DFA& dfa, DFASetter& setter) const {
-    // 1. 字符类信息（必须输出）
+void DFABuilder::OutputData(DFASetter& setter) const {
+    // 常数信息
     setter.SetCharClassCount(class_count_);
-    setter.SetCharToClass(char_to_class_);  // char_to_class_ 大小为 kMaxChars
+    setter.SetDfaStatesCount(static_cast<int>(dfa_.states.size()));
+    setter.SetStartState(dfa_.start_state);
 
-    // 2. DFA 基本结构
-    setter.SetDfaStatesCount(static_cast<int>(dfa.states.size()));
-    setter.SetStartState(dfa.start_state);
+    for (int ch = 0; ch < kMaxChars; ++ch) {
+        if (int class_id = char_to_class_[ch]; class_id > 0) {
+            setter.SetCharToClass(ch, class_id);
+        }
+    }
 
-    // 3. 遍历所有状态
-    for (const auto& state_ptr : dfa.states) {
+    for (const auto& state_ptr : dfa_.states) {
         const DFAState& state = *state_ptr;
 
         // 设置状态接受信息
