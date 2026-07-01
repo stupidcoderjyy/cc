@@ -13,6 +13,9 @@
 
 namespace cc {
 
+using common::AbstractInput;
+using common::kMaxChars;
+
 class NFARegexParser {
 public:
     void Register(std::string regex, const std::string& token);

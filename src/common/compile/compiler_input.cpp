@@ -10,7 +10,7 @@
 #include "io/byte_reader.h"
 #include "io/string_byte_reader.h"
 
-namespace cc {
+namespace common {
 
 CompilerInput::CompilerInput(std::unique_ptr<ByteReader> reader, std::string file_path,
                              int buffer_size)
@@ -214,4 +214,4 @@ CompileError CompilerInput::RangedError(const std::string& msg, int end, int sta
     return CompileError(msg, row_, CurrentLine(), file_path_).SetPos(start, std::max(start, end));
 }
 
-}  // namespace cc
+}  // namespace common

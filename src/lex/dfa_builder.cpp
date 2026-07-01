@@ -261,7 +261,7 @@ void DFABuilder::OutputData(DFASetter& setter) const {
         for (int cid = 0; cid < class_count_; ++cid) {
             // 仅当有转移时调用（-1 表示无转移，可根据 setter 设计选择是否输出）
             if (int target = state.class_id_to_next[cid]; target != -1) {
-                setter.SetTransition(state.id, cid, target);
+                setter.SetGoto(state.id, cid, target);
             }
         }
     }

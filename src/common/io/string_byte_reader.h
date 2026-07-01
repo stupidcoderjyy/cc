@@ -9,7 +9,7 @@
 
 #include "byte_reader.h"
 
-namespace cc {
+namespace common {
 
 // 基于 UTF-8 字符串的字节读取器
 class StringByteReader final : public ByteReader {
@@ -34,6 +34,6 @@ private:
     int next_ = 0;      // 当前读取位置
 };
 
-}  // namespace cc
+}  // namespace common
 
 #endif  //RTFS2D_STRING_BYTE_READER_H

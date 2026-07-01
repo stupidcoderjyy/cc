@@ -7,7 +7,7 @@
 #include <format>
 #include <string>
 
-namespace cc {
+namespace common {
 
 CompileError::CompileError(std::string msg, int row, std::string line, std::string file_path)
     : row_(row), line_(std::move(line)), msg_(std::move(msg)), file_path_(std::move(file_path)) {}
@@ -44,4 +44,4 @@ std::string CompileError::FormatErrorMessage() const {
     return std::format("{}:{}:{}: {}\n    {}\n{}{}", file_path_, row_, start_, msg_, line_,
                        std::string(start_ + 4, ' '), std::string(end_ - start_ + 1, '^'));
 }
-}  // namespace cc
+}  // namespace common

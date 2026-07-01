@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-namespace cc {
+namespace common {
 
 StringInput::StringInput(std::string utf8_data) : data_(std::move(utf8_data)) {}
 
@@ -85,4 +85,4 @@ std::string StringInput::CaptureSubstring(int end, int start) const {
     return data_.substr(start, end - start);
 }
 
-}  // namespace cc
+}  // namespace common

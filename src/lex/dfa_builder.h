@@ -16,6 +16,11 @@
 
 namespace cc {
 
+using common::kMaxCharClass;
+using common::kMaxChars;
+using common::kMaxNfaGroups;
+using common::kMaxPredicates;
+
 typedef std::bitset<kMaxNfaGroups> NFAGroup;
 typedef std::bitset<kMaxCharClass> CharClassBitMask;
 

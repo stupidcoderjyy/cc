@@ -19,6 +19,15 @@ constexpr int kTokenAlpha = 257;
 constexpr int kTokenAlnum = 258;
 constexpr int kTokenString = 259;
 
+using common::CompilerInput;
+using common::Lexer;
+using common::LexerDataSupplier;
+using common::Token;
+using common::TokenEof;
+using common::TokenMatchResult;
+using common::TokenSingle;
+using common::TokenSupplier;
+
 // Custom token: number literal
 struct TokenNumber : Token {
     int val{};
@@ -50,90 +59,62 @@ struct TokenString : Token {
     }
 };
 
-// Subclass of Lexer that exposes protected members for population by DFASetter
-class BuildableLexer : public Lexer {
+class TestDataSupplier : public LexerDataSupplier, public DFASetter {
 public:
-    using Lexer::Lexer;
-
-    void SetAccepted(int state, bool v) {
-        accepted_[state] = v;
-        std::cout << std::format("accepted_[{}] = {} \n", state, v);
-    }
-    void SetGoto(int state, int ch, int target) {
-        goto_[state][ch] = target;
-        std::cout << std::format("goto_[{}][{}] = {}; \n", state, ch, target);
-    }
-    void SetTokenSupplier(int state, TokenSupplier supplier) {
-        token_suppliers_[state] = std::move(supplier);
+    //LexerDataSupplier
+    int CharClassCount() override { return char_class_count_; }
+    int StatesCount() override { return states_count_; }
+    int StartState() override { return start_state_; }
+    void InitAccepted(std::vector<bool>& vec) override { vec = std::move(accepted_); }
+    void InitGoto(std::vector<std::vector<int>>& vec) override { vec = std::move(goto_); }
+    void InitCharToClass(std::vector<int>& vec) override { vec = std::move(char_to_class_); }
+    void InitTokenSuppliers(std::vector<TokenSupplier>& vec) override {
+        vec = std::move(token_suppliers_);
     }
 
-    void SetCharToClass(int ch, int class_id) {
+    //DFASetter
+    void SetCharClassCount(int count) override { char_class_count_ = count; }
+    void SetDfaStatesCount(int count) override {
+        states_count_ = count;
+        accepted_.resize(states_count_, false);
+        goto_.assign(states_count_, std::vector(char_class_count_, -1));
+        token_suppliers_.resize(states_count_);
+        char_to_class_.resize(kMaxChars, 0);
+    }
+    void SetStartState(int id) override { start_state_ = id; }
+    void SetCharToClass(int ch, int class_id) override {
         char_to_class_[ch] = class_id;
         std::cout << std::format("char_to_class_['{}'] = {}; \n", static_cast<char>(ch), class_id);
     }
-};
-
-// DFASetter implementation that populates a BuildableLexer
-class LexerDFASetter : public DFASetter {
-public:
-    LexerDFASetter() = default;
-
-    void SetCharClassCount(int count) override { char_class_count_ = count; }
-
-    void SetCharToClass(int ch, int class_id) override { char_to_class_[ch] = class_id; }
-
-    void SetDfaStatesCount(int count) override { states_count_ = count; }
-
-    void SetStartState(int id) override { start_state_ = id; }
-
-    void SetStateInfo(int stateId, bool isAccepted, const std::string& token) override {
-        accepted_[stateId] = isAccepted;
-        if (isAccepted) {
-            tokens_[stateId] = MakeSupplier(token);
+    void SetStateInfo(int state, bool accepted, const std::string& token) override {
+        accepted_[state] = accepted;
+        if (accepted) {
+            token_suppliers_[state] = MakeSupplier(token);
         }
+        std::cout << std::format("accepted_[{}] = {} \n", state, accepted);
     }
-
-    void SetTransition(int start, int input, int target) override {
-        transitions_.push_back({start, input, target});
+    void SetGoto(int start, int input, int target) override {
+        goto_[start][input] = target;
+        std::cout << std::format("goto_[{}][{}] = {}; \n", start, input, target);
     }
 
     void Finish() override {
         std::cout << std::format("char_class_count_ = {}; \n", char_class_count_);
         std::cout << std::format("states_count_ = {}; \n", states_count_);
         std::cout << std::format("start_state_ = {}; \n", start_state_);
-        lexer_ = std::make_unique<BuildableLexer>(char_class_count_, states_count_, start_state_);
-        for (const auto& [s, b] : accepted_) {
-            lexer_->SetAccepted(s, b);
-        }
-        for (const auto& [s, t] : tokens_) {
-            lexer_->SetTokenSupplier(s, t);
-        }
-        for (const auto& [s, i, t] : transitions_) {
-            lexer_->SetGoto(s, i, t);
-        }
-        for (const auto& [c, i] : char_to_class_) {
-            lexer_->SetCharToClass(c, i);
-        }
+        std::cout.flush();
     }
 
-    std::unique_ptr<BuildableLexer> lexer() { return std::move(lexer_); }
-
 private:
-    std::unique_ptr<BuildableLexer> lexer_;
-    std::unordered_map<int, int> char_to_class_;
     int char_class_count_{};
     int states_count_{};
     int start_state_{};
-    struct Transition {
-        int start;
-        int input;
-        int target;
-    };
-    std::vector<Transition> transitions_;
-    std::unordered_map<int, bool> accepted_;
-    std::unordered_map<int, Lexer::TokenSupplier> tokens_;
+    std::vector<bool> accepted_;
+    std::vector<std::vector<int>> goto_;
+    std::vector<int> char_to_class_;
+    std::vector<TokenSupplier> token_suppliers_;
 
-    static Lexer::TokenSupplier MakeSupplier(const std::string& token) {
+    static TokenSupplier MakeSupplier(const std::string& token) {
         if (token == "number") return [] { return std::make_unique<TokenNumber>(); };
         if (token == "alnum") return [] { return std::make_unique<TokenAlnum>(); };
         if (token == "string") return [] { return std::make_unique<TokenString>(); };
@@ -158,10 +139,9 @@ protected:
             {'+', '-', '*', '/', '=', '<', '>', '!', '(', ')', '{', '}', '[', ']', ';', ',', '.'});
 
         // Build DFA and populate lexer via custom setter
-        LexerDFASetter setter;
-        DFABuilder builder(parser_, &setter);
-        lexer_ = setter.lexer();
-        std::cout.flush();
+        TestDataSupplier tds;
+        DFABuilder builder(parser_, &tds);
+        lexer_ = std::make_unique<Lexer>(tds);
     }
 
     std::unique_ptr<Token> NextToken(const std::string& input) const {
@@ -170,7 +150,7 @@ protected:
     }
 
     NFARegexParser parser_;
-    std::unique_ptr<BuildableLexer> lexer_;
+    std::unique_ptr<Lexer> lexer_;
 };
 
 // ==================== Number Tests ====================

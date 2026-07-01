@@ -8,7 +8,7 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace cc {
+namespace common {
 std::string AbstractInput::ReadUtf() {
     switch (int b1 = Read() & 0xFF; b1 >> 4) {
         case 0:
@@ -230,4 +230,4 @@ inline void AbstractInput::PrepareBitClazz(const std::initializer_list<int>& lis
     }
 }
 
-}  // namespace cc
+}  // namespace common

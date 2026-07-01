@@ -7,7 +7,7 @@
 #include <functional>
 #include <memory>
 
-namespace cc {
+namespace common {
 
 class CompilerInput;
 
@@ -25,10 +25,22 @@ struct Token {
     }
 };
 
+typedef std::function<std::unique_ptr<Token>()> TokenSupplier;
+
+struct LexerDataSupplier {
+    virtual int CharClassCount() = 0;
+    virtual int StatesCount() = 0;
+    virtual int StartState() = 0;
+    virtual void InitAccepted(std::vector<bool>& vec) = 0;
+    virtual void InitGoto(std::vector<std::vector<int>>& vec) = 0;
+    virtual void InitCharToClass(std::vector<int>& vec) = 0;
+    virtual void InitTokenSuppliers(std::vector<TokenSupplier>& vec) = 0;
+    virtual ~LexerDataSupplier() = default;
+};
+
 class Lexer {
 public:
-    typedef std::function<std::unique_ptr<Token>()> TokenSupplier;
-    Lexer(int char_class_count, int states_count, int start_state);
+    explicit Lexer(LexerDataSupplier& lds);
     std::unique_ptr<Token> NextToken(CompilerInput& ci);
 
 protected:
@@ -54,6 +66,6 @@ struct TokenSingle : Token {
     }
 };
 
-}  // namespace cc
+}  // namespace common
 
 #endif  //CC_LEXER_H

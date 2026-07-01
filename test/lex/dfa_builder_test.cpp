@@ -36,9 +36,7 @@ public:
         state_info[stateId] = {isAccepted, token};
     }
 
-    void SetTransition(int start, int input, int target) override {
-        transitions[start][input] = target;
-    }
+    void SetGoto(int start, int input, int target) override { transitions[start][input] = target; }
 
     // 辅助断言方法
     void ExpectStateCount(int expected) const { EXPECT_EQ(state_count, expected); }

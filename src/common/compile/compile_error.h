@@ -7,7 +7,7 @@
 #include <exception>
 #include <string>
 
-namespace cc {
+namespace common {
 
 class CompileError : public std::exception {
 public:
@@ -28,6 +28,6 @@ private:
     int end_ = 0;
 };
 
-}  // namespace cc
+}  // namespace common
 
 #endif  //RTFS2D_COMPILE_ERROR_H

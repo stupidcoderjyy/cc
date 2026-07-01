@@ -6,7 +6,7 @@
 #define RTFS2D_BYTE_ReadER_H
 #include <string>
 
-namespace cc {
+namespace common {
 
 class ByteReader {
 public:
@@ -23,6 +23,6 @@ public:
     virtual ~ByteReader() = default;
 };
 
-}  // namespace cc
+}  // namespace common
 
 #endif  //RTFS2D_BYTE_ReadER_H

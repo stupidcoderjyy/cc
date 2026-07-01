@@ -13,7 +13,7 @@
 #include "compile_error.h"
 #include "io/buffered_input.h"
 
-namespace cc {
+namespace common {
 
 class CompilerInput : public BufferedInput {
 public:
@@ -67,6 +67,6 @@ private:
     CompileError RangedError(const std::string& msg, int end, int start);
 };
 
-}  // namespace cc
+}  // namespace common
 
 #endif  //RTFS2D_COMPILER_INPUT_H

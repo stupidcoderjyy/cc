@@ -11,7 +11,7 @@
 #include "abstract_input.h"
 #include "byte_reader.h"
 
-namespace cc {
+namespace common {
 
 // 带双缓冲区的字节流输入，支持标记、回退等操作
 class BufferedInput : public AbstractInput {
@@ -58,6 +58,6 @@ private:
     void MarkInternal();   // 内部标记实现
 };
 
-}  // namespace cc
+}  // namespace common
 
 #endif  //RTFS2D_BUFFERED_INPUT_H

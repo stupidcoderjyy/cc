@@ -9,6 +9,8 @@
 
 namespace cc {
 
+using common::StringInput;
+
 void NFARegexParser::Register(std::string regex, const std::string& token) {
     if (regex.empty()) {
         return;

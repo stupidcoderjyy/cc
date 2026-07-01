@@ -13,8 +13,7 @@ namespace cc {
  * 派生类可实现为文件写入、代码生成、序列化等。
  * 触发顺序为接口排列顺序
  */
-class DFASetter {
-public:
+struct DFASetter {
     virtual ~DFASetter() = default;
 
     // 设置字符类总数（可选，但可用于验证）
@@ -33,12 +32,12 @@ public:
 
     // 设置某个状态是否为接受状态及其对应的 token（若接受）
     // 若为非接受状态，token 可为空字符串
-    virtual void SetStateInfo(int stateId, bool isAccepted, const std::string& token) = 0;
+    virtual void SetStateInfo(int state, bool accepted, const std::string& token) = 0;
 
     // 设置一条转移：从 start 状态，输入字符类 input，转移到 target 状态
     // input 为类索引（0 ~ class_count-1），target 为目标状态 ID
     // 转移到失败状态时，此函数不会触发
-    virtual void SetTransition(int start, int input, int target) = 0;
+    virtual void SetGoto(int start, int input, int target) = 0;
 
     // 可选：完成所有设置后调用（如写入文件尾）
     virtual void Finish() {}

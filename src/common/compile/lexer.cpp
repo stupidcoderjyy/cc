@@ -7,14 +7,20 @@
 #include "cc_constants.h"
 #include "compiler_input.h"
 
-namespace cc {
+namespace common {
 
-Lexer::Lexer(int char_class_count, int states_count, int start_state)
-    : char_class_count_(char_class_count), states_count_(states_count), start_state_(start_state) {
-    accepted_.resize(states_count, false);
-    goto_.assign(states_count, std::vector(char_class_count, -1));
-    token_suppliers_.resize(states_count);
+Lexer::Lexer(LexerDataSupplier& lds)
+    : char_class_count_(lds.CharClassCount()),
+      states_count_(lds.StatesCount()),
+      start_state_(lds.StartState()) {
+    accepted_.resize(lds.StatesCount(), false);
+    goto_.assign(lds.StatesCount(), std::vector(lds.CharClassCount(), -1));
+    token_suppliers_.resize(lds.StatesCount());
     char_to_class_.resize(kMaxChars, 0);
+    lds.InitGoto(goto_);
+    lds.InitTokenSuppliers(token_suppliers_);
+    lds.InitCharToClass(char_to_class_);
+    lds.InitAccepted(accepted_);
 }
 
 std::unique_ptr<Token> Lexer::NextToken(CompilerInput& ci) {
@@ -67,4 +73,4 @@ BEGIN:
     }
 }
 
-}  // namespace cc
+}  // namespace common

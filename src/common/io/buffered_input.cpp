@@ -10,7 +10,7 @@
 
 #include "string_byte_reader.h"
 
-namespace cc {
+namespace common {
 
 BufferedInput::BufferedInput(std::unique_ptr<ByteReader> reader, int buffer_size)
     : buffer_size_(buffer_size), reader_(std::move(reader)) {
@@ -179,4 +179,4 @@ std::string BufferedInput::Capture() {
     return CaptureSubstring(end, start);
 }
 
-}  // namespace cc
+}  // namespace common

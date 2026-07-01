@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace cc {
+namespace common {
 
 StringByteReader::StringByteReader(std::string utf8_data) : data_(std::move(utf8_data)) {}
 
@@ -63,4 +63,4 @@ bool StringByteReader::Available() {
     return next_ < static_cast<int>(data_.size());
 }
 
-}  // namespace cc
+}  // namespace common

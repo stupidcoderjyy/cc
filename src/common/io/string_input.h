@@ -9,7 +9,7 @@
 
 #include "abstract_input.h"
 
-namespace cc {
+namespace common {
 
 class StringInput : public AbstractInput {
 public:
@@ -34,6 +34,6 @@ private:
     std::string CaptureSubstring(int end, int start) const;
 };
 
-}  // namespace cc
+}  // namespace common
 
 #endif  //RTFS2D_STRING_INPUT_H

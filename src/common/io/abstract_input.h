@@ -7,7 +7,7 @@
 #include <array>
 #include <string>
 
-namespace cc {
+namespace common {
 
 class AbstractInput {
 public:
@@ -44,6 +44,6 @@ private:
     void PrepareBitClazz(const std::initializer_list<int>& list);
 };
 
-}  // namespace cc
+}  // namespace common
 
 #endif  //RTFS2D_ABSTRACT_INPUT_H
