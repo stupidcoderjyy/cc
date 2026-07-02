@@ -21,7 +21,6 @@ set(TEST_SRC_SYNTAX
         syntax/lalr_parser_lr0_test.cpp
         syntax/lalr_parser_canonical_test.cpp
         syntax/lalr_parser_follow_test.cpp
-        syntax/lalr_parser_lalr_merge_test.cpp
         syntax/lalr_parser_lookahead_test.cpp
         syntax/lalr_parser_parsing_table_test.cpp
         syntax/lalr_parser_parse_test.cpp

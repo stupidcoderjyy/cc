@@ -26,6 +26,7 @@ TEST_F(LALRBuilderLookaheadTest, ExpressionReduceLookahead) {
     syntax.AddProduction(T_nt, {id});          // prodId=3
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     // 找到包含 E -> T· (prodId=2, dotPos=1) 的 LR(0) 状态
     int target_state = -1;
@@ -52,6 +53,7 @@ TEST_F(LALRBuilderLookaheadTest, RootItemLookahead) {
     syntax.AddProduction(E, {id});
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     const auto& la = builder.lr0_lookaheads()[0].at({0, 0});
     EXPECT_TRUE(SetContains(la, syntax.end_symbol()));
@@ -72,6 +74,7 @@ TEST_F(LALRBuilderLookaheadTest, ClosureSpontaneousLookahead) {
     syntax.AddProduction(B, {});      // prodId=3 (epsilon)
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     // 状态0应包含 [1,0] A -> ·B c 和闭包项 [2,0] B -> ·d, [3,0] B -> ·
     // [1,0] 的 LA = {$}，B 后面是 c，所以 [2,0] 和 [3,0] 应获得 {c}
@@ -96,6 +99,7 @@ TEST_F(LALRBuilderLookaheadTest, NullableChainLookahead) {
     syntax.AddProduction(C, {});   // prodId=3
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     // [1,0] A -> ·B, LA={$}, B后面为空→all_nullable，所以LA传播
     const auto& la_bc = builder.lr0_lookaheads()[0].at({2, 0});

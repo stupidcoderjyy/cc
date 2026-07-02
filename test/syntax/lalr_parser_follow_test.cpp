@@ -27,6 +27,7 @@ TEST_F(LALRBuilderFollowTest, ExpressionGrammar) {
     syntax.AddProduction(T_nt, {id});
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     int eId = builder.IdOf(E);
     int tId = builder.IdOf(T_nt);
@@ -57,6 +58,7 @@ TEST_F(LALRBuilderFollowTest, BasicFollow) {
     syntax.AddProduction(B, {});
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     int aId = builder.IdOf(A);
     int bId = builder.IdOf(B);
@@ -77,6 +79,7 @@ TEST_F(LALRBuilderFollowTest, MutualRecursionFollow) {
     syntax.AddProduction(B, {A});
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     int aId = builder.IdOf(A);
     int bId = builder.IdOf(B);
@@ -98,6 +101,7 @@ TEST_F(LALRBuilderFollowTest, AllNullable) {
     syntax.AddProduction(C, {});
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     int aId = builder.IdOf(A);
     int bId = builder.IdOf(B);
@@ -117,6 +121,7 @@ TEST_F(LALRBuilderFollowTest, TerminalHasEmptyFollow) {
     syntax.AddProduction(E, {id});
 
     LALRBuilder builder(syntax);
+    builder.Build();
     int idId = builder.IdOf(id);
     EXPECT_TRUE(builder.Follow(idId).empty());
 }

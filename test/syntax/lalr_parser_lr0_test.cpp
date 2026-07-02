@@ -34,6 +34,7 @@ protected:
 // Closure：{ROOT -> ·E} 应扩展出 E 和 T 的所有产生式
 TEST_F(LALRBuilderLR0Test, ClosureFromRootStart) {
     LALRBuilder builder(syntax);
+    builder.Build();
 
     std::set<Item> initial = {{0, 0}};  // ROOT -> ·E
     auto closed = builder.Closure(initial);
@@ -54,6 +55,7 @@ TEST_F(LALRBuilderLR0Test, ClosureFromRootStart) {
 // Closure 对已闭合集合为幂等
 TEST_F(LALRBuilderLR0Test, ClosureIdempotent) {
     LALRBuilder builder(syntax);
+    builder.Build();
 
     std::set<Item> initial = {{0, 0}};
     auto closed1 = builder.Closure(initial);
@@ -65,6 +67,7 @@ TEST_F(LALRBuilderLR0Test, ClosureIdempotent) {
 // GOTO：从闭包沿 E 移动圆点 → 得 {ROOT -> E·, E -> E·+T}
 TEST_F(LALRBuilderLR0Test, GotoOnE) {
     LALRBuilder builder(syntax);
+    builder.Build();
 
     std::set<Item> initial = {{0, 0}};
     auto closed = builder.Closure(initial);
@@ -82,6 +85,7 @@ TEST_F(LALRBuilderLR0Test, GotoOnE) {
 // GOTO：沿终结符 + 移动——闭包中无 + 在圆点后
 TEST_F(LALRBuilderLR0Test, GotoOnPlusEmpty) {
     LALRBuilder builder(syntax);
+    builder.Build();
 
     std::set<Item> initial = {{0, 0}};
     auto closed = builder.Closure(initial);
@@ -94,6 +98,7 @@ TEST_F(LALRBuilderLR0Test, GotoOnPlusEmpty) {
 // GOTO：沿 T 移动 → 得 {E -> T·}（规约项）
 TEST_F(LALRBuilderLR0Test, GotoOnT) {
     LALRBuilder builder(syntax);
+    builder.Build();
 
     std::set<Item> initial = {{0, 0}};
     auto closed = builder.Closure(initial);
@@ -109,6 +114,7 @@ TEST_F(LALRBuilderLR0Test, GotoOnT) {
 // GOTO 沿 EOF——得空集
 TEST_F(LALRBuilderLR0Test, GotoOnEofEmpty) {
     LALRBuilder builder(syntax);
+    builder.Build();
 
     std::set<Item> initial = {{0, 0}};
     auto closed = builder.Closure(initial);

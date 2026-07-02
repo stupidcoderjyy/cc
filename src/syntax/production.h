@@ -14,7 +14,7 @@ namespace cc {
 
 enum class SymbolType { kTerminal, kNonTerminal, kEof };
 
-enum class Associativity { kLeft, kRight, kNonAssoc };
+enum class Associativity { kLeft, kRight, kUndefined };
 
 struct Symbol {
     std::string name;
@@ -26,6 +26,8 @@ struct Symbol {
         : name(std::move(name)), type(type), priority(priority), assoc(assoc) {}
     Symbol(std::string name, SymbolType type) : name(std::move(name)), type(type) {}
     Symbol() : type() {}
+
+    std::string ToString() const { return name; }
 
     bool operator==(const Symbol& other) const { return name == other.name && type == other.type; }
     bool operator<(const Symbol& other) const {
@@ -58,6 +60,15 @@ struct Production {
     Production(int id, Symbol head, std::vector<Symbol> body, int prio, Associativity a)
         : id(id), head(std::move(head)), body(std::move(body)), priority(prio), assoc(a) {}
     Production() : id(0), assoc() {}
+
+    std::string ToString() const {
+        std::string result = head.name + " →";
+        for (const auto& sym : body) {
+            result += " ";
+            result += sym.name;
+        }
+        return result;
+    }
 };
 
 }  // namespace cc

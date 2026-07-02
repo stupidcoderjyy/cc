@@ -4,31 +4,47 @@
 
 #include "lalr_parser.h"
 
+#include <format>
+#include <iomanip>
 #include <queue>
 #include <ranges>
 
+#include "util/print_util.h"
+
 namespace cc {
 
-LALRBuilder::LALRBuilder(Syntax& syntax, const std::optional<LanguageSetter*>& setter)
-    : syntax_(&syntax) {
-    conflict_handler_ = std::make_unique<DefaultConflictHandler>();
+std::string Action::ToString() const {
+    std::string at;
+    switch (type) {
+        case ActionType::kUndefined:
+            at = "UNDEFINED";
+            break;
+        case ActionType::kShift:
+            at = "SHIFT";
+            break;
+        case ActionType::kReduce:
+            at = "REDUCE";
+            break;
+        case ActionType::kAccept:
+            at = "ACCEPT";
+            break;
+    }
+    return std::format("action:{}, target:{}", at, target);
+}
+
+LALRBuilder::LALRBuilder(Syntax& syntax) : syntax_(&syntax) {}
+
+void LALRBuilder::Build(const std::optional<LanguageSetter*>& setter) {
     InitSymbols();
     BuildProductionIndex();
     ComputeFirstSets();
     BuildCanonicalCollection();
-    MergeLALRStates();
     ComputeFollowSets();
     PropagateLookaheads();
     BuildParsingTable();
     if (setter.has_value()) {
         OutputData(*setter.value());
     }
-}
-
-LALRBuilder::~LALRBuilder() = default;
-
-void LALRBuilder::SetConflictHandler(std::unique_ptr<LALRConflictHandler> handler) {
-    conflict_handler_ = std::move(handler);
 }
 
 // 建立 Symbol → sym_id
@@ -243,77 +259,6 @@ void LALRBuilder::BuildCanonicalCollection() {
             }
             //GOTO[i][X] = next_id
             lr0_states_[cur].transitions[sym_id] = target;
-        }
-    }
-}
-/*
-输入：LR0状态(项集 + 转移表)
-输出：LALR状态(项集 + 转移表)
-过程：遍历 LR0 状态，用 std::map<std::set<Item>, int> 按核心分组
-     同一组分配同一个新 ID。然后重构转移边，将旧状态的目标映射到合并后的目标
-
-lalr = []
-lr0_to_lalr = []
-// 核心项集 -> LALR状态ID
-core_to_id = [] → []
-
-// 根据LR0项集族创建LALR项集族
-lr0.foreach((i, items) -> {
-    if (core_to_id.contains(items)) {
-        lr0_to_lalr[i] = core_to_id[items]
-    } else {
-        // 记录core_to_id + 加入lalr
-        lr0_to_lalr[i] = REGISTER_LALR(items, {})
-    }
-})
-
-// 把LR0项集族的转移数据同步到LALR
-lr0.foreach((i, items, goto) -> {
-    lalr = lr0_to_lalr[i]
-    goto.foreach((x, next) -> {
-        lalr_next = lr0_to_lalr[next]
-        if (lalr.goto NOT CONTAINS x) {
-            lalr.goto[x] = lalr_next
-            RETURN
-        }
-        if (lalr.goto[x] != lalr_next) {
-            ERROR
-        }
-    })
-})
-
-TODO 等待删除
-*/
-void LALRBuilder::MergeLALRStates() {
-    int n = static_cast<int>(lr0_states_.size());
-    lr0_to_lalr_.resize(n, -1);
-
-    std::map<std::set<Item>, int> core_to_lalr;
-
-    for (int i = 0; i < n; ++i) {
-        const auto& core = lr0_states_[i].items;
-        if (auto it = core_to_lalr.find(core); it != core_to_lalr.end()) {
-            lr0_to_lalr_[i] = it->second;
-        } else {
-            int new_id = static_cast<int>(lalr_states_.size());
-            lalr_states_.push_back({core, {}});
-            core_to_lalr[core] = new_id;
-            lr0_to_lalr_[i] = new_id;
-        }
-    }
-
-    for (int i = 0; i < n; ++i) {
-        int lalr_i = lr0_to_lalr_[i];
-        for (const auto& [sym_id, target] : lr0_states_[i].transitions) {
-            int lalr_target = lr0_to_lalr_[target];
-            if (auto it = lalr_states_[lalr_i].transitions.find(sym_id);
-                it != lalr_states_[lalr_i].transitions.end()) {
-                if (it->second != lalr_target) {
-                    throw std::runtime_error("Grammar is not LALR: conflicting GOTO after merge");
-                }
-            } else {
-                lalr_states_[lalr_i].transitions[sym_id] = lalr_target;
-            }
         }
     }
 }
@@ -535,67 +480,132 @@ std::pair<int, Associativity> LALRBuilder::LookaheadProperties(int symbolId) con
 }
 
 void LALRBuilder::BuildParsingTable() {
-    int num_lalr = static_cast<int>(lalr_states_.size());
+    if (print_debug_info_) {
+        for (int s = 0; s < lr0_states_.size(); ++s) {
+            PrintGroupInfo(s, lr0_states_[s].items);
+        }
+    }
+    EmitActionShiftAndGoto();
+
+    for (int lr = 0; lr < lr0_states_.size(); ++lr) {
+        for (const auto& [item, f_symbols] : lr0_lookaheads_[lr]) {
+            if (const auto& prod = syntax_->productions()[item.prod_id];
+                item.dot_pos != prod.body.size()) {
+                continue;
+            }
+            for (const auto& f_symbol : f_symbols) {
+                EmitActionReduce(lr, item, f_symbol);
+            }
+        }
+    }
+}
+
+void LALRBuilder::EmitActionShiftAndGoto() {
+    int num_lalr = static_cast<int>(lr0_states_.size());
     int num_symbols = static_cast<int>(id_to_symbol_.size());
 
     action_.assign(num_lalr, std::vector<Action>(num_symbols));
     goto_.resize(num_lalr);
 
     for (int lalr_s = 0; lalr_s < num_lalr; ++lalr_s) {
-        for (const auto& [sym_id, target] : lalr_states_[lalr_s].transitions) {
+        for (const auto& [sym_id, target] : lr0_states_[lalr_s].transitions) {
             if (const auto& sym = id_to_symbol_[sym_id];
                 sym.type == SymbolType::kTerminal || sym.type == SymbolType::kEof) {
                 action_[lalr_s][sym_id] = {ActionType::kShift, target};
+                if (print_debug_info_) {
+                    PrintShift(sym, target);
+                }
             } else {
                 goto_[lalr_s][sym_id] = target;
+                if (print_debug_info_) {
+                    PrintGoto(sym, target);
+                }
             }
         }
     }
+}
 
-    for (int lr0_s = 0; lr0_s < static_cast<int>(lr0_states_.size()); ++lr0_s) {
-        int lalr_s = lr0_to_lalr_[lr0_s];
+void LALRBuilder::EmitActionReduce(int lr_state, const Item& item, const Symbol& forward) {
+    int sym_id = symbol_to_id_.at(forward);
 
-        for (const auto& [item, la] : lr0_lookaheads_[lr0_s]) {
-            if (const auto& prod = syntax_->productions()[item.prod_id];
-                item.dot_pos != static_cast<int>(prod.body.size())) {
-                continue;
-            }
-            for (const auto& lookahead_sym : la) {
-                int sym_id = symbol_to_id_.at(lookahead_sym);
+    // 根产生式
+    if (item.prod_id == 0) {
+        auto& cell = action_[lr_state][sym_id];
+        if (cell.type != ActionType::kUndefined) {
+            throw std::runtime_error("ACCEPT conflict in state " + std::to_string(lr_state));
+        }
+        cell = {ActionType::kAccept, -1};
+        if (print_debug_info_) PrintAccept(forward);
+        return;
+    }
+    const auto& prod = syntax_->productions()[item.prod_id];
+    auto [sym_priority, sym_assoc] = LookaheadProperties(sym_id);
 
-                if (int root_prod_id = 0; item.prod_id == root_prod_id) {
-                    auto& cell = action_[lalr_s][sym_id];
-                    if (cell.type != ActionType::kError) {
-                        throw std::runtime_error("ACCEPT conflict in state " +
-                                                 std::to_string(lalr_s));
-                    }
-                    cell = {ActionType::kAccept, -1};
+    switch (auto& cell = action_[lr_state][sym_id]; cell.type) {
+        case ActionType::kUndefined: {
+            cell = {ActionType::kReduce, item.prod_id};
+            if (print_debug_info_) PrintReduce(forward, prod);
+            break;
+        }
+        case ActionType::kShift: {
+            // Shift-Reduce Conflict
+            // 比较产生式优先级与前瞻符号优先级
+            if (prod.priority > sym_priority) {
+                // 产生式优先级更高 → 规约
+                cell = {ActionType::kReduce, item.prod_id};
+                if (print_debug_info_) PrintReduce(forward, prod);
+            } else if (prod.priority < sym_priority) {
+                // 前瞻符号优先级更高 → 保持移进（不变）
+                // cell 已经是 Shift，无需修改
+            } else {
+                // 优先级相等，根据结合性决策
+                if (prod.assoc == Associativity::kLeft) {
+                    cell = {ActionType::kReduce, item.prod_id};
+                    if (print_debug_info_) PrintReduce(forward, prod);
+                } else if (prod.assoc == Associativity::kRight) {
+                    // 保持移进（不变）
                 } else {
-                    if (auto& cell = action_[lalr_s][sym_id]; cell.type == ActionType::kError) {
-                        cell = {ActionType::kReduce, item.prod_id};
-                    } else if (cell.type == ActionType::kShift) {
-                        const auto& prod_prio = syntax_->productions()[item.prod_id];
-                        auto [la_prio, la_assoc] = LookaheadProperties(sym_id);
-                        auto result = conflict_handler_->HandleShiftReduce(
-                            lalr_s, sym_id, cell.target, item.prod_id, prod_prio.priority,
-                            prod_prio.assoc, la_prio, la_assoc);
-                        if (result == ConflictAction::kReduce) {
-                            cell = {ActionType::kReduce, item.prod_id};
-                        } else if (result == ConflictAction::kAbort) {
-                            throw std::runtime_error("Unresolved shift-reduce conflict in state " +
-                                                     std::to_string(lalr_s));
-                        }
-                    } else if (cell.type == ActionType::kReduce) {
-                        int chosen = conflict_handler_->HandleReduceReduce(
-                            lalr_s, sym_id, {cell.target, item.prod_id});
-                        if (chosen < 0) {
-                            throw std::runtime_error("Unresolved reduce-reduce conflict in state " +
-                                                     std::to_string(lalr_s));
-                        }
-                        cell = {ActionType::kReduce, chosen};
-                    }
+                    // 失败
+                    cell = {ActionType::kUndefined, -1};
                 }
             }
+            if (print_conflict_info_) {
+                WarnConflictSR(lr_state, item, forward, cell);
+            }
+            if (cell.type == ActionType::kUndefined) {
+                throw std::runtime_error("unhandled Shift-Reduce Conflict");
+            }
+            break;
+        }
+        case ActionType::kReduce: {
+            // Reduce-Reduce Conflict
+            const auto& existing_prod = syntax_->productions()[cell.target];
+            const auto& new_prod = prod;
+
+            int chosen_id;
+            if (existing_prod.priority > new_prod.priority) {
+                chosen_id = existing_prod.id;
+            } else if (existing_prod.priority < new_prod.priority) {
+                chosen_id = new_prod.id;
+            } else {
+                // 优先级相同，选择 ID 更小的
+                // TODO 报错
+                chosen_id = std::min(existing_prod.id, new_prod.id);
+            }
+            cell = {ActionType::kReduce, chosen_id};
+            if (print_debug_info_) PrintReduce(forward, syntax_->productions()[chosen_id]);
+            if (print_conflict_info_) {
+                WarnConflictRR(existing_prod, prod, forward, cell);
+            }
+            break;
+        }
+        case ActionType::kAccept: {
+            // Accept动作具有最高优先级，忽略Reduce
+            return;
+        }
+        default: {
+            throw std::runtime_error(std::format("Unexpected action type in state {}, action: {}",
+                                                 lr_state, static_cast<int>(cell.type)));
         }
     }
 }
@@ -616,26 +626,16 @@ void LALRBuilder::OutputData(LanguageSetter& setter) const {
     setter.SetNonTerminals(non_terms);
 
     // LALR 状态 + 前瞻符
-    for (int lalr_s = 0; lalr_s < static_cast<int>(lalr_states_.size()); ++lalr_s) {
-        setter.SetLALRState(lalr_s, lalr_states_[lalr_s].items);
-
-        // 合并该 LALR 状态对应的所有 LR(0) 状态的前瞻符
-        std::map<Item, SymbolSet> merged_la;
-        for (int lr0_s = 0; lr0_s < static_cast<int>(lr0_states_.size()); ++lr0_s) {
-            if (lr0_to_lalr_[lr0_s] != lalr_s) continue;
-            for (const auto& [item, la] : lr0_lookaheads_[lr0_s]) {
-                merged_la[item].insert(la.begin(), la.end());
-            }
-        }
-        setter.SetStateLookaheads(lalr_s, merged_la);
+    for (int lr0_s = 0; lr0_s < static_cast<int>(lr0_states_.size()); ++lr0_s) {
+        setter.SetLALRState(lr0_s, lr0_states_[lr0_s].items);
+        setter.SetStateLookaheads(lr0_s, lr0_lookaheads_[lr0_s]);
     }
 
     // 分析表
     for (int s = 0; s < static_cast<int>(action_.size()); ++s) {
         for (int sym = 0; sym < static_cast<int>(action_[s].size()); ++sym) {
-            const auto& act = action_[s][sym];
-            if (act.type != ActionType::kError) {
-                setter.SetAction(s, sym, static_cast<int>(act.type), act.target);
+            if (const auto& [type, target] = action_[s][sym]; type != ActionType::kUndefined) {
+                setter.SetAction(s, sym, static_cast<int>(type), target);
             }
         }
         for (const auto& [sym, target] : goto_[s]) {
@@ -683,6 +683,118 @@ bool LALRBuilder::DebugParse(const std::vector<Symbol>& input) const {
             return false;  // ERROR
         }
     }
+}
+
+std::string LALRBuilder::ItemString(int state, const Item& item) const {
+    const auto& prod = syntax_->productions()[item.prod_id];
+    std::string result = "<";
+    result += prod.head.name;
+    result += " →";
+
+    int curPos = 0;
+    int bodySize = static_cast<int>(prod.body.size());
+
+    while (curPos < bodySize) {
+        if (curPos == item.dot_pos) {
+            result += " ·";
+        }
+        result += " ";
+        result += prod.body[curPos].name;
+        ++curPos;
+    }
+    if (item.dot_pos == curPos) {
+        result += " ·";
+    }
+
+    // 获取前瞻符集合
+    if (auto it = lr0_lookaheads_[state].find(item); it != lr0_lookaheads_[state].end()) {
+        result += ", {";
+        bool first = true;
+        for (const auto& sym : it->second) {
+            if (!first) result += ", ";
+            first = false;
+            result += sym.name;
+        }
+        result += "}";
+    } else {
+        result += ", {}";
+    }
+    result += ">";
+
+    return result;
+}
+
+void LALRBuilder::WarnConflictSR(int state, const Item& item, const Symbol& forward,
+                                 const Action& action) const {
+    Begin(0, BLACK, action.type == ActionType::kUndefined ? BG_BLACK : BG_YELLOW, std::cerr);
+    std::cerr << std::left << "shift-reduce conflict:";
+    std::cerr << "prod:" << std::setw(30) << ItemString(state, item);
+    std::cerr << "forward:'" << std::setw(13) << forward.name << "'";
+    std::cerr << action.ToString();
+    End(std::cerr);
+    std::cerr << std::endl;
+}
+
+void LALRBuilder::WarnConflictRR(const Production& pre, const Production& cur,
+                                 const Symbol& forward, const Action& action) const {
+    Begin(0, BLACK, action.type == ActionType::kUndefined ? BG_BLACK : BG_YELLOW, std::cerr);
+    std::cerr << std::left << "reduce-reduce conflict:    ";
+    std::cerr << "prod1:" << std::setw(20)
+              << syntax_->productions()[pre.id].ToString();  // 可调用toString或打印id
+    std::cerr << "prod2:" << std::setw(20) << syntax_->productions()[cur.id].ToString();
+    std::cerr << "forward: " << std::setw(13) << forward.name;
+    std::cerr << action.ToString();
+    End(std::cerr);
+    std::cerr << std::endl;
+}
+
+void LALRBuilder::PrintGroupInfo(int groupId, const std::set<Item>& items) const {
+    std::cout << "\r\ngroup " << groupId << ":" << std::endl;
+    for (const auto& item : items) {
+        PrintPurple(ItemString(groupId, item), std::cout);
+        std::cout << std::endl;
+    }
+}
+
+void LALRBuilder::PrintReduce(const Symbol& forward, const Production& prod) {
+    PrintHighlightBlue("REDUCE", std::cout);
+    std::cout << "        forward:";
+    PrintGreen(forward.name, std::cout);
+    if (int len = 22 - static_cast<int>(forward.name.length()); len > 0)
+        std::cout << std::string(len, ' ');
+    std::cout << "prod:";
+    // 可打印更详细，此处仅用id
+    PrintPurple(std::to_string(prod.id), std::cout);
+    std::cout << std::endl;
+}
+
+void LALRBuilder::PrintGoto(const Symbol& input, int nextState) {
+    PrintHighlightWhite("GOTO", std::cout);
+    std::cout << "          input:";
+    PrintGreen(input.name, std::cout);
+    int len = 24 - static_cast<int>(input.name.length());
+    if (len > 0) std::cout << std::string(len, ' ');
+    std::cout << "to:";
+    PrintPurple(std::to_string(nextState), std::cout);
+    std::cout << std::endl;
+}
+
+void LALRBuilder::PrintShift(const Symbol& input, int nextState) {
+    PrintHighlightYellow("SHIFT", std::cout);
+    std::cout << "         input:";
+    PrintGreen(input.name, std::cout);
+    int len = 24 - static_cast<int>(input.name.length());
+    if (len > 0) std::cout << std::string(len, ' ');
+    std::cout << "next:";
+    PrintPurple(std::to_string(nextState), std::cout);
+    std::cout << std::endl;
+}
+
+void LALRBuilder::PrintAccept(const Symbol& forward) {
+    PrintHighlightPurple("ACCEPT", std::cout);
+    std::cout << "        forward:";
+    PrintGreen(forward.name, std::cout);
+    std::cout << std::endl;
 }
 
 }  // namespace cc

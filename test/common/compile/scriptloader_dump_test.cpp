@@ -1,4 +1,4 @@
-﻿//
+//
 // Created by PC on 2026/7/2.
 //
 // Debug test: register the scriptloader grammar and dump all LALR/DFA data.
@@ -191,14 +191,14 @@ protected:
     void RegisterTokens() {
         auto& p = parser_;
 
+        p.Register(R"(\a\w*)", "id");
+        p.Register(R"(\"[^\"]*\")", "string");
         p.Register(R"(%%TOKEN)", "token_begin");
         p.Register(R"(%%SYNTAX)", "syntax_begin");
         p.Register(R"(%%)", "block_end");
-        p.Register(R"(\a\w*)", "id");
-        p.Register(R"(\"[^\"]*\")", "string");
-        p.Register(R"('(.|\\.)')", "char");
-        p.Register(R"(%\d+)", "prod_prior");
-        p.Register(R"(\$\d+)", "symb_prior");
+        p.Register(R"(@($\a+|\a+|~)|'(.|\\.)')", "terminal");
+        p.Register(R"(%\d*[rRlL])", "prod_mark");
+        p.Register(R"($\d*[rRlL])", "symb_mark");
 
         parser_.RegisterSingles({':', ';', '|'});
     }
@@ -210,17 +210,15 @@ protected:
 
         using I = std::initializer_list<Symbol>;
 
-        // script : @token_begin tokens @syntax_begin syntax @block_end
-        syntax_.AddProduction(nt("script"), I{t("token_begin"), nt("tokens"), t("syntax_begin"),
-                                              nt("syntax"), t("block_end")});
-
+        // script : @token_begin tokens @block_end @syntax_begin syntax @block_end
+        syntax_.AddProduction(nt("script"), I{t("token_begin"), nt("tokens"), t("block_end"),
+                                              t("syntax_begin"), nt("syntax"), t("block_end")});
         // tokens : token | tokens token
         syntax_.AddProduction(nt("tokens"), I{nt("token")});
         syntax_.AddProduction(nt("tokens"), I{nt("tokens"), nt("token")});
 
-        // token : id ':' @string ';'  |  id ':' @char ';'
+        // token : @id ':' @string ';'
         syntax_.AddProduction(nt("token"), I{t("id"), t(":"), t("string"), t(";")});
-        syntax_.AddProduction(nt("token"), I{t("id"), t(":"), t("char"), t(";")});
 
         // syntax : prod | syntax prod
         syntax_.AddProduction(nt("syntax"), I{nt("prod")});
@@ -233,29 +231,24 @@ protected:
         syntax_.AddProduction(nt("body"), I{nt("slice")});
         syntax_.AddProduction(nt("body"), I{nt("body"), t("|"), nt("slice")});
 
-        // slice : seq prod_prior_opt
-        syntax_.AddProduction(nt("slice"), I{nt("seq"), nt("prod_prior_opt")});
+        // slice : seq prod_priority
+        syntax_.AddProduction(nt("slice"), I{nt("seq"), nt("prod_priority")});
 
-        // prod_prior_opt : ε | @prod_prior
-        syntax_.AddProduction(nt("prod_prior_opt"), eps);
-        syntax_.AddProduction(nt("prod_prior_opt"), I{t("prod_prior")});
+        // prod_priority : @~ | @prod_priority_mark
+        syntax_.AddProduction(nt("prod_priority"), eps);
+        syntax_.AddProduction(nt("prod_priority"), I{t("prod_mark")});
 
         // seq : symbol | seq symbol
         syntax_.AddProduction(nt("seq"), I{nt("symbol")});
         syntax_.AddProduction(nt("seq"), I{nt("seq"), nt("symbol")});
 
-        // symbol : @id | terminal symb_prior_opt
+        // symbol : @id | @terminal symb_priority
         syntax_.AddProduction(nt("symbol"), I{t("id")});
-        syntax_.AddProduction(nt("symbol"), I{nt("terminal"), nt("symb_prior_opt")});
+        syntax_.AddProduction(nt("symbol"), I{t("terminal"), nt("symb_priority")});
 
-        // terminal : @id | @string | @char
-        syntax_.AddProduction(nt("terminal"), I{t("id")});
-        syntax_.AddProduction(nt("terminal"), I{t("string")});
-        syntax_.AddProduction(nt("terminal"), I{t("char")});
-
-        // symb_prior_opt : ε | @symb_prior
-        syntax_.AddProduction(nt("symb_prior_opt"), eps);
-        syntax_.AddProduction(nt("symb_prior_opt"), I{t("symb_prior")});
+        // symb_priority : @~ | @symb_priority_mark
+        syntax_.AddProduction(nt("symb_priority"), eps);
+        syntax_.AddProduction(nt("symb_priority"), I{t("symb_mark")});
     }
 
     NFARegexParser parser_;
@@ -300,7 +293,10 @@ TEST_F(ScriptLoaderDumpTest, DumpGrammarLALR) {
     std::cout << "\n========== GRAMMAR LALR DATA ==========\n";
 
     ConsoleLanguageSetter setter(&syntax_);
-    LALRBuilder builder(syntax_, &setter);
+    LALRBuilder builder(syntax_);
+    builder.set_print_conflict_info(true);
+    builder.set_print_debug_info(true);
+    builder.Build(&setter);
 
     // FIRST sets
     std::cout << "\n====== FIRST SETS ======\n";
@@ -340,22 +336,15 @@ TEST_F(ScriptLoaderDumpTest, DumpGrammarLALR) {
 
     // Parse table compact view
     std::cout << "\n====== PARSE TABLE ======\n";
-    std::cout << "LALR states: " << builder.lalr_states().size()
-              << "  LR0 states: " << builder.lr0_states().size() << "  merged: "
-              << (builder.lr0_states().size() != builder.lalr_states().size() ? "YES" : "NO")
-              << "\n";
-    std::cout << "LR0→LALR map:";
-    for (size_t i = 0; i < builder.lr0_to_lalr().size(); ++i)
-        std::cout << "  " << i << "→" << builder.lr0_to_lalr()[i];
-    std::cout << "\n\n";
+    std::cout << "  LR0 states: " << builder.lr0_states().size() << std::endl;
 
     for (size_t s = 0; s < builder.action().size(); ++s) {
         std::cout << "State " << s << ":\n";
         for (size_t a = 0; a < builder.action()[s].size(); ++a) {
-            const auto& act = builder.action()[s][a];
-            if (act.type == ActionType::kError) continue;
-            std::cout << "  ACTION[term " << a << "] = " << action_name(static_cast<int>(act.type))
-                      << " " << act.target << "\n";
+            const auto& [type, target] = builder.action()[s][a];
+            if (type == ActionType::kUndefined) continue;
+            std::cout << "  ACTION[term " << a << "] = " << action_name(static_cast<int>(type))
+                      << " " << target << "\n";
         }
         for (const auto& [sym, target] : builder.gotoT()[s]) {
             std::cout << "  GOTO[nonterm " << sym << "] = " << target << "\n";

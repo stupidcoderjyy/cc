@@ -27,6 +27,7 @@ TEST_F(LALRBuilderFirstSetTest, BasicFirst) {
     syntax.AddProduction(B, {});  // epsilon
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     int idA = builder.IdOf(A);
     int idB = builder.IdOf(B);
@@ -64,6 +65,7 @@ TEST_F(LALRBuilderFirstSetTest, MultipleNullable) {
     syntax.AddProduction(D, {d});
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     int idA = builder.IdOf(A);
     int idB = builder.IdOf(B);
@@ -84,6 +86,7 @@ TEST_F(LALRBuilderFirstSetTest, PureEpsilon) {
     syntax.AddProduction(A, {});
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     int idA = builder.IdOf(A);
     EXPECT_TRUE(builder.First(idA).empty());
@@ -97,6 +100,7 @@ TEST_F(LALRBuilderFirstSetTest, MutualRecursion) {
     syntax.AddProduction(B, {A});
 
     LALRBuilder builder(syntax);
+    builder.Build();
 
     int idA = builder.IdOf(A);
     int idB = builder.IdOf(B);
@@ -110,6 +114,7 @@ TEST_F(LALRBuilderFirstSetTest, MutualRecursion) {
 TEST_F(LALRBuilderFirstSetTest, EofSymbol) {
     syntax.AddProduction(A, {c});  // add at least one production to avoid empty grammar
     LALRBuilder builder(syntax);
+    builder.Build();
 
     int eofId = builder.IdOf(syntax.end_symbol());
     EXPECT_TRUE(SetContains(builder.First(eofId), syntax.end_symbol()));

@@ -33,12 +33,14 @@ protected:
 
 TEST_F(LALRBuilderCanonicalTest, StateCount) {
     LALRBuilder builder(syntax);
+    builder.Build();
     EXPECT_GE(builder.lr0_states().size(), 5);
     EXPECT_LE(builder.lr0_states().size(), 8);
 }
 
 TEST_F(LALRBuilderCanonicalTest, StartStateContainsRootItems) {
     LALRBuilder builder(syntax);
+    builder.Build();
 
     const auto& s0 = builder.lr0_states()[0];
     EXPECT_TRUE(ItemsContain(s0.items, 0, 0));
@@ -49,6 +51,7 @@ TEST_F(LALRBuilderCanonicalTest, StartStateContainsRootItems) {
 
 TEST_F(LALRBuilderCanonicalTest, StartStateTransitions) {
     LALRBuilder builder(syntax);
+    builder.Build();
 
     const auto& s0 = builder.lr0_states()[0];
     int eId = builder.IdOf(E);
@@ -65,6 +68,7 @@ TEST_F(LALRBuilderCanonicalTest, StartStateTransitions) {
 
 TEST_F(LALRBuilderCanonicalTest, StateAfterEHasPlusTransition) {
     LALRBuilder builder(syntax);
+    builder.Build();
 
     int eId = builder.IdOf(E);
     int plusId = builder.IdOf(plus);
@@ -81,6 +85,7 @@ TEST_F(LALRBuilderCanonicalTest, StateAfterEHasPlusTransition) {
 
 TEST_F(LALRBuilderCanonicalTest, ReduceStatesHaveNoTransitions) {
     LALRBuilder builder(syntax);
+    builder.Build();
 
     int tId = builder.IdOf(T_nt);
     const auto& s0 = builder.lr0_states()[0];
@@ -94,6 +99,7 @@ TEST_F(LALRBuilderCanonicalTest, ReduceStatesHaveNoTransitions) {
 
 TEST_F(LALRBuilderCanonicalTest, NoDuplicateStates) {
     LALRBuilder builder(syntax);
+    builder.Build();
 
     for (size_t i = 0; i < builder.lr0_states().size(); ++i) {
         for (size_t j = i + 1; j < builder.lr0_states().size(); ++j) {

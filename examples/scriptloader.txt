@@ -7,21 +7,21 @@ syntax_begin: "%%SYNTAX";
 block_end: "%%";
 
 terminal: "@($\a+|\a+|~)|'(.|\\.)'";
-prod_priority_mark: "%\d+";
-symb_priority_mark: "$\d+[R]";
+prod_mark: "%\d*[rRlL]";
+symb_mark: "$\d*[rRlL]";
 
 %%
 
 %%SYNTAX
 
-script : @token_begin
+script : @token_begin tokens @block_end @syntax_begin syntax @block_end
        ;
 
 tokens : token
        | tokens token
        ;
 
-token : id ':' @string ';'
+token : @id ':' @string ';'
       ;
 
 syntax : prod
@@ -39,7 +39,7 @@ slice : seq prod_priority
       ;
 
 prod_priority : @~
-              | @prod_priority_mark
+              | @prod_mark
               ;
 
 seq : symbol
@@ -51,7 +51,7 @@ symbol : @id
        ;
 
 symb_priority : @~
-              | @symb_priority_mark
+              | @symb_mark
               ;
 
 %%

@@ -41,6 +41,7 @@ protected:
 // 使用默认冲突处理器，表达式文法应无冲突
 TEST_F(LALRBuilderParsingTableTest, NoConflictsWithDefaultHandler) {
     LALRBuilder builder(syntax);
+    builder.Build();
     // 不抛异常即通过
     EXPECT_GT(builder.action().size(), 0);
     SUCCEED();
@@ -55,5 +56,6 @@ TEST_F(LALRBuilderParsingTableTest, CustomHandler) {
     s2.AddProduction(a, {});
 
     LALRBuilder builder(s2);
+    builder.Build();
     EXPECT_GT(builder.action().size(), 0);
 }

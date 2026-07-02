@@ -12,7 +12,6 @@ add_library(${TARGET} STATIC
         util/bitset_hash.h
         syntax/syntax.cpp
         syntax/lalr_parser.cpp
-        syntax/lalr_conflict_handler.cpp
 )
 target_link_libraries(${TARGET} PRIVATE
         cc::common

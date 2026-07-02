@@ -26,30 +26,35 @@ protected:
 // id 单独匹配
 TEST_F(LALRBuilderParseTest, SingleToken) {
     LALRBuilder builder(syntax);
+    builder.Build();
     EXPECT_TRUE(builder.DebugParse({id, syntax.end_symbol()}));
 }
 
 // id + id
 TEST_F(LALRBuilderParseTest, SimpleAddition) {
     LALRBuilder builder(syntax);
+    builder.Build();
     EXPECT_TRUE(builder.DebugParse({id, plus, id, syntax.end_symbol()}));
 }
 
 // id + id + id
 TEST_F(LALRBuilderParseTest, TwoAdditions) {
     LALRBuilder builder(syntax);
+    builder.Build();
     EXPECT_TRUE(builder.DebugParse({id, plus, id, plus, id, syntax.end_symbol()}));
 }
 
 // 语法错误：单独的 +
 TEST_F(LALRBuilderParseTest, SyntaxError) {
     LALRBuilder builder(syntax);
+    builder.Build();
     EXPECT_FALSE(builder.DebugParse({plus, id, syntax.end_symbol()}));
 }
 
 // 语法错误：空输入
 TEST_F(LALRBuilderParseTest, EmptyInputRejected) {
     LALRBuilder builder(syntax);
+    builder.Build();
     // 空输入只有 $，E 不能归约为空
     EXPECT_FALSE(builder.DebugParse({syntax.end_symbol()}));
 }
@@ -57,5 +62,6 @@ TEST_F(LALRBuilderParseTest, EmptyInputRejected) {
 // 重复的 + +
 TEST_F(LALRBuilderParseTest, DoublePlus) {
     LALRBuilder builder(syntax);
+    builder.Build();
     EXPECT_FALSE(builder.DebugParse({id, plus, plus, id, syntax.end_symbol()}));
 }
