@@ -15,9 +15,9 @@
 namespace cc {
 
 using common::CompilerInput;
-using common::kAccept;
-using common::kReduce;
-using common::kShift;
+using common::kActionAccept;
+using common::kActionReduce;
+using common::kActionShift;
 using common::Lexer;
 using common::LexerDataSupplier;
 using common::Parser;
@@ -109,9 +109,9 @@ public:
 
     void InitActions(std::vector<std::vector<int>>& vec) override {
         vec.assign(3, std::vector(2, 0));
-        vec[0][1] = 2 << 16 | kShift;   // state 0 on 'a': SHIFT → state 1
-        vec[1][0] = 3 << 16 | kReduce;  // state 1 on '$': REDUCE prod 1
-        vec[2][0] = 1 << 16 | kAccept;  // state 2 on '$': ACCEPT
+        vec[0][1] = 2 << 16 | kActionShift;   // state 0 on 'a': SHIFT → state 1
+        vec[1][0] = 3 << 16 | kActionReduce;  // state 1 on '$': REDUCE prod 1
+        vec[2][0] = 1 << 16 | kActionAccept;  // state 2 on '$': ACCEPT
     }
 
     void InitTokenToSymbol(std::vector<int>& vec) override {
@@ -139,7 +139,7 @@ public:
 
 // ==================== Test Fixture ====================
 
-class ParserTest : public ::testing::Test {
+class ParserTest : public testing::Test {
 protected:
     void SetUp() override {
         NFARegexParser parser;

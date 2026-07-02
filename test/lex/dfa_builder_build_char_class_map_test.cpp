@@ -10,7 +10,7 @@
 
 namespace cc {
 
-class DfaBuilderBuildCharClassMapTest : public ::testing::Test {
+class DfaBuilderBuildCharClassMapTest : public testing::Test {
 protected:
     // 辅助函数：检查所有字符是否按签名正确分组
     static void CheckClasses(const std::vector<int>& char_to_class, int class_count,

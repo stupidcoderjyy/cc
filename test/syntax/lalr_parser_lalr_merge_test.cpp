@@ -7,7 +7,7 @@
 
 using namespace cc;
 
-class LALRBuilderMergeTest : public ::testing::Test {
+class LALRBuilderMergeTest : public testing::Test {
 protected:
     // 文法：0: ROOT -> E, 1: E -> E+T, 2: E -> T, 3: T -> id
     Syntax syntax;

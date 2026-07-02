@@ -7,7 +7,7 @@
 
 using namespace cc;
 
-class LALRBuilderFollowTest : public ::testing::Test {
+class LALRBuilderFollowTest : public testing::Test {
 protected:
     static bool SetContains(const SymbolSet& set, const Symbol& sym) { return set.contains(sym); }
 };

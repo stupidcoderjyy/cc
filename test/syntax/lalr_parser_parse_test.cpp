@@ -7,7 +7,7 @@
 
 using namespace cc;
 
-class LALRBuilderParseTest : public ::testing::Test {
+class LALRBuilderParseTest : public testing::Test {
 protected:
     // E -> E + T | T, T -> id
     Syntax syntax;

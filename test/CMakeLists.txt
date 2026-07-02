@@ -4,6 +4,7 @@ include(GoogleTest)
 set(TEST_SRC_COMMON
         common/compile/lexer_test.cpp
         common/compile/parser_test.cpp
+        common/compile/scriptloader_dump_test.cpp
 )
 set(TEST_SRC_LEX
         lex/dfa_builder_build_char_class_map_test.cpp

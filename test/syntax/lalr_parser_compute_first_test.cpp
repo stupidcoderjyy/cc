@@ -7,7 +7,7 @@
 
 using namespace cc;
 
-class LALRBuilderFirstSetTest : public ::testing::Test {
+class LALRBuilderFirstSetTest : public testing::Test {
 protected:
     Syntax syntax;
     Symbol A{"A", SymbolType::kNonTerminal};

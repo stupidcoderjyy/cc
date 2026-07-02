@@ -126,7 +126,7 @@ private:
 
 // ==================== Test Fixture ====================
 
-class LexerTest : public ::testing::Test {
+class LexerTest : public testing::Test {
 protected:
     void SetUp() override {
         // Register regex patterns

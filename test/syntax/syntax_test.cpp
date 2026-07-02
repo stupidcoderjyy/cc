@@ -7,7 +7,7 @@
 
 using namespace cc;
 
-class SyntaxTest : public ::testing::Test {
+class SyntaxTest : public testing::Test {
 protected:
     Syntax syntax;
     Symbol E{"E", SymbolType::kNonTerminal};

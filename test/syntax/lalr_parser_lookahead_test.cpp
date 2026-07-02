@@ -7,7 +7,7 @@
 
 using namespace cc;
 
-class LALRBuilderLookaheadTest : public ::testing::Test {
+class LALRBuilderLookaheadTest : public testing::Test {
 protected:
     static bool SetContains(const SymbolSet& set, const Symbol& sym) { return set.contains(sym); }
 };

@@ -7,7 +7,7 @@
 
 using namespace cc;
 
-class LALRBuilderCanonicalTest : public ::testing::Test {
+class LALRBuilderCanonicalTest : public testing::Test {
 protected:
     // 文法：
     // 0: ROOT -> E    (自动插入)

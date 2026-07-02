@@ -31,6 +31,8 @@ void LALRBuilder::SetConflictHandler(std::unique_ptr<LALRConflictHandler> handle
     conflict_handler_ = std::move(handler);
 }
 
+// 建立 Symbol → sym_id
+// 建立 Symbol → List<Production>
 void LALRBuilder::InitSymbols() {
     // 收集所有符号：终结符 + 非终结符 + EOF
     auto add_sym = [this](const Symbol& s) {
@@ -61,11 +63,16 @@ void LALRBuilder::BuildProductionIndex() {
     }
 }
 
+// 计算 FIRST(Symbol)
+// FIRST(X) = {X}, X是终结符号
+//          = {ε}, X只能展开为 X → ε
+//          = {α | 存在X → α Y, α是终结符号}
 void LALRBuilder::ComputeFirstSets() {
     int n = static_cast<int>(id_to_symbol_.size());
     symbol_to_first_set_.assign(n, {});
     symbol_to_has_epsilon_.assign(n, false);
 
+    // FIRST(X) = {X}
     for (int i = 0; i < n; ++i) {
         if (const auto& sym = id_to_symbol_[i]; sym.type != SymbolType::kNonTerminal) {
             symbol_to_first_set_[i].insert(sym);
@@ -106,6 +113,7 @@ void LALRBuilder::ComputeFirstSets() {
     }
 }
 
+// 获取所有等价LR0项集
 std::set<Item> LALRBuilder::Closure(std::set<Item> items) const {
     auto result = std::move(items);
     std::queue<Item> worklist;
@@ -139,6 +147,7 @@ std::set<Item> LALRBuilder::Closure(std::set<Item> items) const {
     return result;
 }
 
+// GOTO(LR0Item item, id) = Closure({ [A → αX·β | A → αX·β ∈ item && X.id == id] })
 std::set<Item> LALRBuilder::GotoFunc(const std::set<Item>& items, int symbolId) const {
     std::set<Item> moved;
 
@@ -156,28 +165,73 @@ std::set<Item> LALRBuilder::GotoFunc(const std::set<Item>& items, int symbolId) 
     return Closure(std::move(moved));
 }
 
+/*
+输入: 根产生式
+输出: LR0状态(LR0项集 + 转移表)
+
+算法:
+// 生成初始状态并压栈
+root_group = CLOSURE({ S' → ·S })
+stack << REGISTER(root_group)
+
+// 遍历所有可达状态
+while stack is not empty {
+    stack >> i
+    group = states[i]
+
+    // 收集当前状态中，圆点后所有可能的符号（不区分终结符/非终结符）
+    symbols = group.filter(可输入).map((A → α · X β) → X).collect()
+
+    // 遍历每一个符号，计算 GOTO 目标
+    symbols.foreach(X -> {
+        // 移动圆点
+        moved_items = GOTO(group, X).filter(非空).collect()
+
+        // 注册状态，计算 GOTO 目标
+        next_id;
+        next_group = GROUP(moved_items);
+        if (EXISTS(next_group)) {
+            next_id = next_group.id
+        } else {
+            next_id = REGISTER(next_group)
+            stack << next_id
+        }
+
+        // 记录GOTO
+        GOTO[i][X] = next_id
+    })
+}
+*/
 void LALRBuilder::BuildCanonicalCollection() {
     std::map<std::set<Item>, int> seen;
-    std::queue<int> worklist;
+    std::queue<int> queue;
 
-    std::set<Item> start_items = Closure({{0, 0}});
-    lr0_states_.push_back({start_items, {}});
-    seen.emplace(start_items, 0);
-    worklist.push(0);
+    // REGISTER
+    auto register_lr0 = [this, &seen, &queue](const std::set<Item>& items) {
+        int new_id = static_cast<int>(lr0_states_.size());
+        seen.emplace(items, new_id);
+        lr0_states_.push_back({items, {}});
+        queue.push(new_id);
+        return new_id;
+    };
 
-    while (!worklist.empty()) {
-        int cur = worklist.front();
-        worklist.pop();
+    register_lr0(Closure({{0, 0}}));
 
-        std::set<int> next_symbols;
+    while (!queue.empty()) {
+        int cur = queue.front();
+        queue.pop();
+
+        // symbols = group.filter(可输入).map((A → α · X β) → X).collect()
+        std::set<int> symbols;
         for (const auto& [prod_id, dot_pos] : lr0_states_[cur].items) {
-            const auto& prod = syntax_->productions()[prod_id];
-            if (dot_pos < static_cast<int>(prod.body.size())) {
-                next_symbols.insert(symbol_to_id_.at(prod.body[dot_pos]));
+            if (const auto& prod = syntax_->productions()[prod_id];
+                dot_pos < static_cast<int>(prod.body.size())) {
+                symbols.insert(symbol_to_id_.at(prod.body[dot_pos]));
             }
         }
 
-        for (int sym_id : next_symbols) {
+        for (int sym_id : symbols) {
+            //moved_items = GOTO(group, X).filter(非空).collect()
             auto next_items = GotoFunc(lr0_states_[cur].items, sym_id);
             if (next_items.empty()) continue;
 
@@ -185,16 +239,51 @@ void LALRBuilder::BuildCanonicalCollection() {
             if (auto it = seen.find(next_items); it != seen.end()) {
                 target = it->second;
             } else {
-                target = static_cast<int>(lr0_states_.size());
-                seen.emplace(next_items, target);
-                lr0_states_.push_back({std::move(next_items), {}});
-                worklist.push(target);
+                target = register_lr0(next_items);
             }
+            //GOTO[i][X] = next_id
             lr0_states_[cur].transitions[sym_id] = target;
         }
     }
 }
+/*
+输入：LR0状态(项集 + 转移表)
+输出：LALR状态(项集 + 转移表)
+过程：遍历 LR0 状态，用 std::map<std::set<Item>, int> 按核心分组
+     同一组分配同一个新 ID。然后重构转移边，将旧状态的目标映射到合并后的目标
 
+lalr = []
+lr0_to_lalr = []
+// 核心项集 -> LALR状态ID
+core_to_id = [] → []
+
+// 根据LR0项集族创建LALR项集族
+lr0.foreach((i, items) -> {
+    if (core_to_id.contains(items)) {
+        lr0_to_lalr[i] = core_to_id[items]
+    } else {
+        // 记录core_to_id + 加入lalr
+        lr0_to_lalr[i] = REGISTER_LALR(items, {})
+    }
+})
+
+// 把LR0项集族的转移数据同步到LALR
+lr0.foreach((i, items, goto) -> {
+    lalr = lr0_to_lalr[i]
+    goto.foreach((x, next) -> {
+        lalr_next = lr0_to_lalr[next]
+        if (lalr.goto NOT CONTAINS x) {
+            lalr.goto[x] = lalr_next
+            RETURN
+        }
+        if (lalr.goto[x] != lalr_next) {
+            ERROR
+        }
+    })
+})
+
+TODO 等待删除
+*/
 void LALRBuilder::MergeLALRStates() {
     int n = static_cast<int>(lr0_states_.size());
     lr0_to_lalr_.resize(n, -1);
@@ -229,6 +318,45 @@ void LALRBuilder::MergeLALRStates() {
     }
 }
 
+/*
+计算 FOLLOW(非终结符) = 非终结符右侧的第一个终结符号
+
+FOLLOW[ROOT] = { $ }
+
+changed = true
+while (changed) {
+    changed = false
+    production.foreach((A -> x1 x2 ... xn) -> {
+        for (i = 0; i < n; ++i) {
+            if (xi.isTerminal) continue
+
+            //β -> x(j+1) x(j+2) ... xn
+            has_epsilon = true
+            for (j = i + 1; j < n; ++j) {
+                // 将 FIRST(xj) 中除 ε 外的符号加入 FOLLOW(xi)
+                set = FIRST(xj).filter(NOT ε)
+                if (set NOT EMPTY) {
+                    changed = true
+                    FOLLOW[xi] << set
+                }
+
+                // 判断FIRST(xj)是否包含 ε
+                if (ε NOT IN FIRST(xj)) {
+                    has_epsilon = false
+                    break
+                }
+            }
+
+            if (!has_epsilon) CONTINUE
+
+            FOLLOW[A].filter(NOT IN FOLLOW[xi]).foreach(x -> {
+                changed = true
+                FOLLOW[xi] << x
+            })
+        }
+    })
+}
+*/
 void LALRBuilder::ComputeFollowSets() {
     int n = static_cast<int>(id_to_symbol_.size());
     symbol_to_follow_set_.assign(n, {});
@@ -275,6 +403,58 @@ void LALRBuilder::ComputeFollowSets() {
     }
 }
 
+/*
+// 1. 初始化
+lookaheads[STATE][ITEM] = [][]->{}
+
+lookaheads[0][root_lr0] << { $ }
+
+changed = true
+while (changed) {
+    changed = false
+
+    range(0, states.size).foreach(s -> {
+        snapshot = COPY lookaheads[s]
+        snapshot.filter(set NOT EMPTY).foreach((item = A → α · X β, set) -> {
+            prod = item.prod
+            if (item 不可输入) CONTINUE
+
+            x = 下一个符号
+
+            // 规则 1：通过 GOTO 转移传播（Shift Propagation）
+            GOTO[s].filter(CONTAINS x).foreach((?,t) -> {
+                set.filter(lookaheads[t][A → α X · β] NOT CONTAINS).foreach(s -> {
+                    lookaheads[t][A → α X · β] << s
+                    changed = true
+                })
+            })
+
+            if (x IS_TERMINAL) CONTINUE
+
+            // B = X · β = x0 x1 ... xn
+            temp_set = {}
+            has_epsilon = true
+            for (j = 0; j < n; ++j) {
+                FIRST[xj].filter(NOT ε).collect(temp_set)
+                if (FIRST[xj] NOT CONTAINS ε) {
+                    has_epsilon = false
+                    BREAK
+                }
+            }
+            if (has_epsilon) {
+                temp_set << set
+            }
+
+            productions.filter(head == x).foreach((x → ·γ){
+                temp_set.filter(lookaheads[s][x → ·γ] NOT CONTAINS s).foreach(s0 -> {
+                    lookaheads[s][x → ·γ].add(s0)
+                    changed = true
+                })
+            })
+        })
+    })
+}
+*/
 void LALRBuilder::PropagateLookaheads() {
     int n = static_cast<int>(lr0_states_.size());
     lr0_lookaheads_.resize(n);
@@ -363,8 +543,8 @@ void LALRBuilder::BuildParsingTable() {
 
     for (int lalr_s = 0; lalr_s < num_lalr; ++lalr_s) {
         for (const auto& [sym_id, target] : lalr_states_[lalr_s].transitions) {
-            const auto& sym = id_to_symbol_[sym_id];
-            if (sym.type == SymbolType::kTerminal || sym.type == SymbolType::kEof) {
+            if (const auto& sym = id_to_symbol_[sym_id];
+                sym.type == SymbolType::kTerminal || sym.type == SymbolType::kEof) {
                 action_[lalr_s][sym_id] = {ActionType::kShift, target};
             } else {
                 goto_[lalr_s][sym_id] = target;

@@ -8,7 +8,7 @@
 
 namespace cc {
 
-class DfaBuilderEpsilonClosureTest : public ::testing::Test {
+class DfaBuilderEpsilonClosureTest : public testing::Test {
 protected:
     void TearDown() override {
         // 测试中手动 new 的节点未统一管理，为简化未做清理。

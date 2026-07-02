@@ -5,7 +5,6 @@
 #ifndef CC_DFA_SETTER_H
 #define CC_DFA_SETTER_H
 #include <string>
-#include <vector>
 
 namespace cc {
 /**

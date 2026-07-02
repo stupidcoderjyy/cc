@@ -10,9 +10,11 @@
 #include <set>
 #include <vector>
 
+#include "cc_constants.h"
 #include "lalr_conflict_handler.h"
 #include "language_setter.h"
 #include "syntax.h"
+#include "util/bitset_hash.h"
 
 namespace cc {
 

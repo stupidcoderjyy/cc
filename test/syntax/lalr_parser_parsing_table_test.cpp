@@ -7,7 +7,7 @@
 
 using namespace cc;
 
-class LALRBuilderParsingTableTest : public ::testing::Test {
+class LALRBuilderParsingTableTest : public testing::Test {
 protected:
     Syntax syntax;
     Symbol E{"E", SymbolType::kNonTerminal};

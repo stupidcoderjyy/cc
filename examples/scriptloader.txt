@@ -1,0 +1,57 @@
+%%TOKEN
+
+id: "\a\w*";
+string: "\"[^\"]*\";
+token_begin: "%%TOKEN";
+syntax_begin: "%%SYNTAX";
+block_end: "%%";
+
+terminal: "@($\a+|\a+|~)|'(.|\\.)'";
+prod_priority_mark: "%\d+";
+symb_priority_mark: "$\d+[R]";
+
+%%
+
+%%SYNTAX
+
+script : @token_begin
+       ;
+
+tokens : token
+       | tokens token
+       ;
+
+token : id ':' @string ';'
+      ;
+
+syntax : prod
+       | syntax prod
+       ;
+
+prod : @id ':' body ';'
+     ;
+
+body : slice
+     | body '|' slice
+     ;
+
+slice : seq prod_priority
+      ;
+
+prod_priority : @~
+              | @prod_priority_mark
+              ;
+
+seq : symbol
+    | seq symbol
+    ;
+
+symbol : @id
+       | @terminal symb_priority
+       ;
+
+symb_priority : @~
+              | @symb_priority_mark
+              ;
+
+%%

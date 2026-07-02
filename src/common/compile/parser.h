@@ -6,7 +6,6 @@
 #define CC_PARSER_H
 #include <functional>
 #include <memory>
-#include <optional>
 #include <vector>
 
 #include "lexer.h"
@@ -35,7 +34,7 @@ class CompilerInput;
 class Lexer;
 
 typedef std::function<std::unique_ptr<Property>()> PropertySupplier;
-typedef std::function<void(Production& p, const std::vector<std::unique_ptr<Property>>&)> ReduceFunc;
+typedef std::function<void(const std::vector<std::unique_ptr<Property>>&)> ReduceFunc;
 
 struct ParserDataSupplier {
     virtual int TokenMappersCount() const = 0;
@@ -52,7 +51,7 @@ struct ParserDataSupplier {
     virtual ~ParserDataSupplier() = default;
 };
 
-enum ParserAction { kAccept = 1, kShift = 2, kReduce = 3 };
+enum ParserAction { kActionAccept = 1, kActionShift = 2, kActionReduce = 3 };
 
 class Parser {
 public:

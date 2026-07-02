@@ -81,7 +81,7 @@ private:
 };
 
 // ---------- 测试夹具 ----------
-class NFARegexParserTest : public ::testing::Test {
+class NFARegexParserTest : public testing::Test {
 protected:
     static bool MatchRegex(const std::string& regex, const std::string& input) {
         NFARegexParser local_parser;

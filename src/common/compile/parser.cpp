@@ -44,14 +44,14 @@ void Parser::Parse(Lexer& lexer, CompilerInput& ci) {
                 OnFailed(ci, token);
                 return;
             }
-            case kAccept: {
+            case kActionAccept: {
                 std::vector<std::unique_ptr<Property>> body;
                 body.push_back(std::move(properties.back()));
                 properties.pop_back();
                 try {
                     auto& p = productions_[0];
                     if (auto& f = reduce_actions_[p.head.id]) {
-                        f(p, body);
+                        f(body);
                     }
                 } catch (std::exception& err) {
                     ci.Recover(false);
@@ -59,14 +59,14 @@ void Parser::Parse(Lexer& lexer, CompilerInput& ci) {
                 }
                 return;
             }
-            case kShift: {
+            case kActionShift: {
                 ci.Mark();
                 states.push_back(target);
                 properties.push_back(std::make_unique<PropertyTerminal>(std::move(token)));
                 token = lexer.NextToken(ci);
                 break;
             }
-            case kReduce: {
+            case kActionReduce: {
                 auto& p = productions_[target];
                 std::vector<std::unique_ptr<Property>> body(p.body.size());
                 for (int i = static_cast<int>(p.body.size()) - 1; i >= 0; i--) {
@@ -84,7 +84,7 @@ void Parser::Parse(Lexer& lexer, CompilerInput& ci) {
                 }
                 try {
                     if (auto& f = reduce_actions_[p.head.id]) {
-                        f(p, body);
+                        f(body);
                     }
                 } catch (std::exception& err) {
                     ci.Recover(false);
