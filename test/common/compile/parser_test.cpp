@@ -99,6 +99,7 @@ public:
     int NonTerminalSymbolsCount() const override { return 2; }
     int TerminalSymbolsCount() const override { return 2; }
     int StatesCount() const override { return 3; }
+    int ProductionsCount() const override { return 2; }
 
     void InitReduceActions(std::vector<common::ReduceFunc>& vec) override {}
 
@@ -126,11 +127,7 @@ public:
         vec[1] = [] { return std::make_unique<Property>(); };
     }
 
-    void InitSymbolsAndProductions(
-            std::vector<Symbol>& symbols, std::vector<Production>& prods) override {
-        symbols.resize(2);
-        symbols[0] = {false, 0};
-        symbols[1] = {false, 1};
+    void InitProductions(std::vector<Production>& prods) override {
         prods.resize(2);
         prods[0] = Production{0, {false, 0}, {{false, 1}}};
         prods[1] = Production{1, {false, 1}, {{true, 1}}};

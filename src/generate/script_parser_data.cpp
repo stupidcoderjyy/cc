@@ -5,7 +5,6 @@
 #include "script_parser_data.h"
 
 #include <iostream>
-#include <ranges>
 
 namespace cc::generate {
 
@@ -34,6 +33,68 @@ int TokenSyntaxBegin::Type() {
 }
 int TokenBlockEnd::Type() {
     return kTokenBlockEnd;
+}
+
+TokenMatchResult TokenId::OnMatched(const std::string& lexeme, CompilerInput& ci) {
+    val = lexeme;
+    return TokenMatchResult::kAccept;
+}
+
+TokenMatchResult TokenStringVal::OnMatched(const std::string& lexeme, CompilerInput& ci) {
+    val = lexeme.substr(0, lexeme.length() - 2);
+    return TokenMatchResult::kAccept;
+}
+
+TokenMatchResult TokenTerminal::OnMatched(const std::string& lexeme, CompilerInput& ci) {
+    if (lexeme[0] == '\'') {
+        type = Type::kSingle;
+        ch = lexeme[1];
+        name = {ch};
+        return TokenMatchResult::kAccept;
+    }
+    switch (lexeme[1]) {
+        case '~':
+            type = Type::kEpsilon;
+            name = "ε";
+            break;
+        case '$':
+            type = Type::kKeyWord;
+            name = lexeme.substr(2);
+            break;
+        default:
+            type = Type::kNormal;
+            name = lexeme.substr(1);
+            break;
+    }
+    return TokenMatchResult::kAccept;
+}
+
+TokenMatchResult TokenProdMark::OnMatched(const std::string& lexeme, CompilerInput& ci) {
+    if (lexeme.back() == 'l' || lexeme.back() == 'L') {
+        assoc = Associativity::kLeft;
+    } else if (lexeme.back() == 'r' || lexeme.back() == 'R') {
+        assoc = Associativity::kRight;
+    } else {
+        prior = std::stoi(lexeme.substr(1));
+    }
+    if (assoc != Associativity::kUndefined && lexeme.length() > 2) {
+        prior = std::stoi(lexeme.substr(1, lexeme.length() - 2));
+    }
+    return TokenMatchResult::kAccept;
+}
+
+TokenMatchResult TokenSymbMark::OnMatched(const std::string& lexeme, CompilerInput& ci) {
+    if (lexeme.back() == 'l' || lexeme.back() == 'L') {
+        assoc = Associativity::kLeft;
+    } else if (lexeme.back() == 'r' || lexeme.back() == 'R') {
+        assoc = Associativity::kRight;
+    } else {
+        prior = std::stoi(lexeme.substr(1));
+    }
+    if (assoc != Associativity::kUndefined && lexeme.length() > 2) {
+        prior = std::stoi(lexeme.substr(1, lexeme.length() - 2));
+    }
+    return TokenMatchResult::kAccept;
 }
 
 // ==================== Lexer Data ====================
@@ -233,75 +294,85 @@ int ScriptParserData::TokenMappersCount() const {
     return 264;
 }  // 0..263
 int ScriptParserData::NonTerminalSymbolsCount() const {
-    return 12;
+    return 13;
 }
 int ScriptParserData::TerminalSymbolsCount() const {
     return 12;
 }  // 11 terminals + $
 int ScriptParserData::StatesCount() const {
-    return 32;
+    return 33;
+}
+int ScriptParserData::ProductionsCount() const {
+    return 20;
 }
 
 void ScriptParserData::InitReduceActions(std::vector<common::ReduceFunc>& vec) {
-    vec.resize(19);
-    // prod 0: ROOT -> script
-    vec[0] = [this](auto& p) { ReduceRoot(p); };
-    // prod 1: script -> token_begin tokens block_end syntax_begin syntax block_end
+    if (!dfa_setter_ || !lang_setter_) {
+        return;
+    }
+    // ROOT -> script
+    // vec[0] = [this](auto& p) { ReduceRoot(p); };
+    // script -> token_begin tokens block_end syntax_begin syntax block_end
     vec[1] = [this](auto& p) { ReduceScript(p); };
-    // prod 2: tokens -> token
-    vec[2] = [this](auto& p) { ReduceTokens0(p); };
-    // prod 3: tokens -> tokens token
-    vec[3] = [this](auto& p) { ReduceTokens1(p); };
-    // prod 4: token -> id : string ;
+    // tokens -> token
+    // vec[2] = [this](auto& p) { ReduceTokens0(p); };
+    // tokens -> tokens token
+    // vec[3] = [this](auto& p) { ReduceTokens1(p); };
+    // token -> id : string ;
     vec[4] = [this](auto& p) { ReduceToken(p); };
-    // prod 5: syntax -> prod
+    // syntax -> prod
     vec[5] = [this](auto& p) { ReduceSyntax0(p); };
-    // prod 6: syntax -> syntax prod
+    // syntax -> syntax prod
     vec[6] = [this](auto& p) { ReduceSyntax1(p); };
-    // prod 7: prod -> id : body ;
+    // prod -> id : body ;
     vec[7] = [this](auto& p) { ReduceProd(p); };
-    // prod 8: body -> slice
+    // body -> slice
     vec[8] = [this](auto& p) { ReduceBody0(p); };
-    // prod 9: body -> body | slice
+    // body -> body | slice
     vec[9] = [this](auto& p) { ReduceBody1(p); };
-    // prod 10: slice -> seq prod_priority
+    // slice -> seq prod_priority
     vec[10] = [this](auto& p) { ReduceSlice(p); };
-    // prod 11: prod_priority -> ε
+    // prod_priority -> ε
     vec[11] = [this](auto& p) { ReduceProdPriority0(p); };
-    // prod 12: prod_priority -> prod_mark
+    // prod_priority -> prod_mark
     vec[12] = [this](auto& p) { ReduceProdPriority1(p); };
-    // prod 13: seq -> symbol
+    // seq -> symbol
     vec[13] = [this](auto& p) { ReduceSeq0(p); };
-    // prod 14: seq -> seq symbol
+    // seq -> seq symbol
     vec[14] = [this](auto& p) { ReduceSeq1(p); };
-    // prod 15: symbol -> id
-    vec[15] = [this](auto& p) { ReduceSymbol0(p); };
-    // prod 16: symbol -> terminal symb_priority
-    vec[16] = [this](auto& p) { ReduceSymbol1(p); };
-    // prod 17: symb_priority -> ε
-    vec[17] = [this](auto& p) { ReduceSymbPriority0(p); };
-    // prod 18: symb_priority -> symb_mark
-    vec[18] = [this](auto& p) { ReduceSymbPriority1(p); };
+    // symbol -> atom symb_priority
+    vec[15] = [this](auto& p) { ReduceSymbol(p); };
+    // atom -> terminal
+    vec[16] = [this](auto& p) { ReduceAtom0(p); };
+    // atom -> id
+    vec[17] = [this](auto& p) { ReduceAtom1(p); };
+    // symb_priority -> ε
+    vec[18] = [this](auto& p) { ReduceSymbPriority0(p); };
+    // symb_priority -> symb_mark
+    vec[19] = [this](auto& p) { ReduceSymbPriority1(p); };
 }
 
 void ScriptParserData::InitGoto(std::vector<std::vector<int>>& vec) {
-    vec[0][10] = 2;
+    vec[0][11] = 2;
     vec[1][4] = 4;
-    vec[1][8] = 5;
+    vec[1][9] = 5;
     vec[5][4] = 8;
-    vec[10][6] = 13;
-    vec[10][7] = 14;
-    vec[14][6] = 17;
+    vec[10][7] = 13;
+    vec[10][8] = 14;
+    vec[14][7] = 17;
     vec[15][0] = 20;
     vec[15][1] = 21;
     vec[15][2] = 22;
     vec[15][5] = 23;
-    vec[18][9] = 25;
-    vec[20][3] = 27;
-    vec[20][5] = 28;
-    vec[29][0] = 20;
-    vec[29][1] = 31;
-    vec[29][5] = 23;
+    vec[15][6] = 24;
+    vec[20][3] = 26;
+    vec[20][5] = 23;
+    vec[20][6] = 27;
+    vec[23][10] = 31;
+    vec[28][0] = 20;
+    vec[28][1] = 32;
+    vec[28][5] = 23;
+    vec[28][6] = 24;
 }
 
 void ScriptParserData::InitActions(std::vector<std::vector<int>>& vec) {
@@ -334,56 +405,63 @@ void ScriptParserData::InitActions(std::vector<std::vector<int>>& vec) {
     vec[16][0] = kActionReduce | 1;
     vec[17][8] = kActionReduce | 6;
     vec[17][10] = kActionReduce | 6;
-    vec[18][1] = kActionShift | 24;
-    vec[18][2] = kActionReduce | 17;
-    vec[18][3] = kActionReduce | 17;
-    vec[18][4] = kActionReduce | 17;
-    vec[18][5] = kActionReduce | 17;
-    vec[18][8] = kActionReduce | 17;
-    vec[19][2] = kActionReduce | 15;
-    vec[19][3] = kActionReduce | 15;
-    vec[19][4] = kActionReduce | 15;
-    vec[19][5] = kActionReduce | 15;
-    vec[19][8] = kActionReduce | 15;
+    vec[18][1] = kActionReduce | 16;
+    vec[18][2] = kActionReduce | 16;
+    vec[18][3] = kActionReduce | 16;
+    vec[18][4] = kActionReduce | 16;
+    vec[18][5] = kActionReduce | 16;
+    vec[18][8] = kActionReduce | 16;
+    vec[19][1] = kActionReduce | 17;
+    vec[19][2] = kActionReduce | 17;
+    vec[19][3] = kActionReduce | 17;
+    vec[19][4] = kActionReduce | 17;
+    vec[19][5] = kActionReduce | 17;
+    vec[19][8] = kActionReduce | 17;
     vec[20][2] = kActionShift | 18;
-    vec[20][3] = kActionShift | 26;
+    vec[20][3] = kActionShift | 25;
     vec[20][4] = kActionReduce | 11;
     vec[20][5] = kActionReduce | 11;
     vec[20][8] = kActionShift | 19;
     vec[21][4] = kActionReduce | 8;
     vec[21][5] = kActionReduce | 8;
-    vec[22][4] = kActionShift | 29;
-    vec[22][5] = kActionShift | 30;
-    vec[23][2] = kActionReduce | 13;
-    vec[23][3] = kActionReduce | 13;
-    vec[23][4] = kActionReduce | 13;
-    vec[23][5] = kActionReduce | 13;
-    vec[23][8] = kActionReduce | 13;
-    vec[24][2] = kActionReduce | 18;
-    vec[24][3] = kActionReduce | 18;
-    vec[24][4] = kActionReduce | 18;
-    vec[24][5] = kActionReduce | 18;
-    vec[24][8] = kActionReduce | 18;
-    vec[25][2] = kActionReduce | 16;
-    vec[25][3] = kActionReduce | 16;
-    vec[25][4] = kActionReduce | 16;
-    vec[25][5] = kActionReduce | 16;
-    vec[25][8] = kActionReduce | 16;
-    vec[26][4] = kActionReduce | 12;
-    vec[26][5] = kActionReduce | 12;
-    vec[27][4] = kActionReduce | 10;
-    vec[27][5] = kActionReduce | 10;
-    vec[28][2] = kActionReduce | 14;
-    vec[28][3] = kActionReduce | 14;
-    vec[28][4] = kActionReduce | 14;
-    vec[28][5] = kActionReduce | 14;
-    vec[28][8] = kActionReduce | 14;
-    vec[29][2] = kActionShift | 18;
-    vec[29][8] = kActionShift | 19;
-    vec[30][8] = kActionReduce | 7;
-    vec[30][10] = kActionReduce | 7;
-    vec[31][4] = kActionReduce | 9;
-    vec[31][5] = kActionReduce | 9;
+    vec[22][4] = kActionShift | 28;
+    vec[22][5] = kActionShift | 29;
+    vec[23][1] = kActionShift | 30;
+    vec[23][2] = kActionReduce | 18;
+    vec[23][3] = kActionReduce | 18;
+    vec[23][4] = kActionReduce | 18;
+    vec[23][5] = kActionReduce | 18;
+    vec[23][8] = kActionReduce | 18;
+    vec[24][2] = kActionReduce | 13;
+    vec[24][3] = kActionReduce | 13;
+    vec[24][4] = kActionReduce | 13;
+    vec[24][5] = kActionReduce | 13;
+    vec[24][8] = kActionReduce | 13;
+    vec[25][4] = kActionReduce | 12;
+    vec[25][5] = kActionReduce | 12;
+    vec[26][4] = kActionReduce | 10;
+    vec[26][5] = kActionReduce | 10;
+    vec[27][2] = kActionReduce | 14;
+    vec[27][3] = kActionReduce | 14;
+    vec[27][4] = kActionReduce | 14;
+    vec[27][5] = kActionReduce | 14;
+    vec[27][8] = kActionReduce | 14;
+    vec[28][2] = kActionShift | 18;
+    vec[28][8] = kActionShift | 19;
+    vec[29][8] = kActionReduce | 7;
+    vec[29][10] = kActionReduce | 7;
+    vec[30][2] = kActionReduce | 19;
+    vec[30][3] = kActionReduce | 19;
+    vec[30][4] = kActionReduce | 19;
+    vec[30][5] = kActionReduce | 19;
+    vec[30][8] = kActionReduce | 19;
+    vec[31][2] = kActionReduce | 15;
+    vec[31][3] = kActionReduce | 15;
+    vec[31][4] = kActionReduce | 15;
+    vec[31][5] = kActionReduce | 15;
+    vec[31][8] = kActionReduce | 15;
+    vec[32][4] = kActionReduce | 9;
+    vec[32][5] = kActionReduce | 9;
 }
 
 void ScriptParserData::InitTokenToSymbol(std::vector<int>& vec) {
@@ -402,129 +480,151 @@ void ScriptParserData::InitTokenToSymbol(std::vector<int>& vec) {
 }
 
 void ScriptParserData::InitPropertySuppliers(std::vector<common::PropertySupplier>& vec) {
-    vec.resize(12);
     for (auto& s : vec)
-        s = [] { return std::make_unique<PropertyVoid>(); };
+        s = [] { return std::make_unique<Property>(); };
 }
 
-void ScriptParserData::InitSymbolsAndProductions(
-        std::vector<common::Symbol>& symbols, std::vector<common::Production>& prods) {
-    // Symbols: non-terminals (12)
-    symbols.resize(12);
-    symbols[0] = {false, 0};    // seq
-    symbols[1] = {false, 1};    // slice
-    symbols[2] = {false, 2};    // body
-    symbols[3] = {false, 3};    // prod_priority
-    symbols[4] = {false, 4};    // token
-    symbols[5] = {false, 5};    // symbol
-    symbols[6] = {false, 6};    // prod
-    symbols[7] = {false, 7};    // syntax
-    symbols[8] = {false, 8};    // tokens
-    symbols[9] = {false, 9};    // symb_priority
-    symbols[10] = {false, 10};  // script
-    symbols[11] = {false, 11};  // ROOT
+void ScriptParserData::InitProductions(std::vector<common::Production>& prods) {
+    // Symbols: non-terminals
+    // 0 seq
+    // 1 slice
+    // 2 body
+    // 3 prod_priority
+    // 4 token
+    // 5 atom
+    // 6 symbol
+    // 7 prod
+    // 8 syntax
+    // 9 tokens
+    // 10 symb_priority
+    // 11 script
+    // 12 ROOT
 
-    // Productions (19)
-    prods.resize(19);
-    prods[0] = {0, {false, 11}, {{false, 10}}};  // ROOT → script
-    prods[1] = {1, {false, 10},
-            {{true, 11}, {false, 8}, {true, 10}, {true, 9}, {false, 7}, {true, 10}}};  // script→...
-    prods[2] = {2, {false, 8}, {{false, 4}}};              // tokens → token
-    prods[3] = {3, {false, 8}, {{false, 8}, {false, 4}}};  // tokens → tokens token
+    // Productions
+    prods[0] = {0, {false, 12}, {{false, 11}}};  // ROOT → script
+    prods[1] = {1, {false, 11},
+            {{true, 11}, {false, 9}, {true, 10}, {true, 9}, {false, 8},
+                    {true, 10}}};  // script → token_begin tokens block_end syntax_begin syntax block_end
+    prods[2] = {2, {false, 9}, {{false, 4}}};              // tokens → token
+    prods[3] = {3, {false, 9}, {{false, 9}, {false, 4}}};  // tokens → tokens token
     prods[4] = {
             4, {false, 4}, {{true, 8}, {true, 7}, {true, 6}, {true, 5}}};  // token → id : string ;
-    prods[5] = {5, {false, 7}, {{false, 6}}};                              // syntax → prod
-    prods[6] = {6, {false, 7}, {{false, 7}, {false, 6}}};                  // syntax → syntax prod
+    prods[5] = {5, {false, 8}, {{false, 7}}};                              // syntax → prod
+    prods[6] = {6, {false, 8}, {{false, 8}, {false, 7}}};                  // syntax → syntax prod
     prods[7] = {
-            7, {false, 6}, {{true, 8}, {true, 7}, {false, 2}, {true, 5}}};  // prod → id : body ;
+            7, {false, 7}, {{true, 8}, {true, 7}, {false, 2}, {true, 5}}};  // prod → id : body ;
     prods[8] = {8, {false, 2}, {{false, 1}}};                               // body → slice
     prods[9] = {9, {false, 2}, {{false, 2}, {true, 4}, {false, 1}}};        // body → body | slice
-    prods[10] = {10, {false, 1}, {{false, 0}, {false, 3}}};  // slice → seq prod_priority
-    prods[11] = {11, {false, 3}, {}};                        // prod_priority → ε
-    prods[12] = {12, {false, 3}, {{true, 3}}};               // prod_priority → prod_mark
-    prods[13] = {13, {false, 0}, {{false, 5}}};              // seq → symbol
-    prods[14] = {14, {false, 0}, {{false, 0}, {false, 5}}};  // seq → seq symbol
-    prods[15] = {15, {false, 5}, {{true, 8}}};               // symbol → id
-    prods[16] = {16, {false, 5}, {{true, 2}, {false, 9}}};   // symbol → terminal symb_priority
-    prods[17] = {17, {false, 9}, {}};                        // symb_priority → ε
-    prods[18] = {18, {false, 9}, {{true, 1}}};               // symb_priority → symb_mark
+    prods[10] = {10, {false, 1}, {{false, 0}, {false, 3}}};   // slice → seq prod_priority
+    prods[11] = {11, {false, 3}, {}};                         // prod_priority → ε
+    prods[12] = {12, {false, 3}, {{true, 3}}};                // prod_priority → prod_mark
+    prods[13] = {13, {false, 0}, {{false, 6}}};               // seq → symbol
+    prods[14] = {14, {false, 0}, {{false, 0}, {false, 6}}};   // seq → seq symbol
+    prods[15] = {15, {false, 6}, {{false, 5}, {false, 10}}};  // symbol → atom symb_priority
+    prods[16] = {16, {false, 5}, {{true, 2}}};                // atom → @terminal
+    prods[17] = {17, {false, 5}, {{true, 8}}};                // atom → @id
+    prods[18] = {18, {false, 10}, {}};                        // symb_priority → ε
+    prods[19] = {19, {false, 10}, {{true, 1}}};               // symb_priority → symb_mark
 }
 
-void ScriptParserData::ReduceRoot(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: ROOT -> script" << std::endl;
+ScriptParserData::ScriptParserData(DFASetter& dfa_setter, LanguageSetter& lang_setter)
+    : dfa_setter_(&dfa_setter), lang_setter_(&lang_setter) {
+    parser_ = std::make_unique<NFARegexParser>();
+    syntax_ = std::make_unique<Syntax>();
 }
 
+ScriptParserData::ScriptParserData() : dfa_setter_(), lang_setter_() {}
+
+// ROOT -> script
+// void ScriptParserData::ReduceRoot(const std::vector<std::unique_ptr<Property>>& props) {}
+
+// script -> token_begin tokens block_end syntax_begin syntax block_end
 void ScriptParserData::ReduceScript(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: script -> token_begin tokens block_end syntax_begin syntax block_end"
-              << std::endl;
+    DFABuilder dfa_builder(*parser_);
+    dfa_builder.Build(dfa_setter_);
+    LALRBuilder lalr_builder(*syntax_);
+    lalr_builder.Build(lang_setter_);
 }
 
-void ScriptParserData::ReduceTokens0(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: tokens -> token" << std::endl;
+// tokens -> token
+// void ScriptParserData::ReduceTokens0(const std::vector<std::unique_ptr<Property>>& props) {}
+
+// tokens -> tokens token
+// void ScriptParserData::ReduceTokens1(const std::vector<std::unique_ptr<Property>>& props) {}
+
+// token -> id : string ;
+void ScriptParserData::ReduceToken(const std::vector<std::unique_ptr<Property>>& props) const {
+    auto* p0 = static_cast<PropertyTerminal*>(props[0].get());
+    auto* p2 = static_cast<PropertyTerminal*>(props[2].get());
+    auto id = p0->token->Cast<TokenId>().val;
+    auto regex = p2->token->Cast<TokenStringVal>().val;
+    parser_->Register(regex, id);
 }
 
-void ScriptParserData::ReduceTokens1(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: tokens -> tokens token" << std::endl;
-}
-
-void ScriptParserData::ReduceToken(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: token -> id : string ;" << std::endl;
-}
-
+// syntax -> prod
 void ScriptParserData::ReduceSyntax0(const std::vector<std::unique_ptr<Property>>& props) {
     std::cout << "Reduce: syntax -> prod" << std::endl;
 }
 
+// syntax -> syntax prod
 void ScriptParserData::ReduceSyntax1(const std::vector<std::unique_ptr<Property>>& props) {
     std::cout << "Reduce: syntax -> syntax prod" << std::endl;
 }
 
+// prod -> id : body ;
 void ScriptParserData::ReduceProd(const std::vector<std::unique_ptr<Property>>& props) {
     std::cout << "Reduce: prod -> id : body ;" << std::endl;
 }
 
+// body -> slice
 void ScriptParserData::ReduceBody0(const std::vector<std::unique_ptr<Property>>& props) {
     std::cout << "Reduce: body -> slice" << std::endl;
 }
 
+// body -> body | slice
 void ScriptParserData::ReduceBody1(const std::vector<std::unique_ptr<Property>>& props) {
     std::cout << "Reduce: body -> body | slice" << std::endl;
 }
 
+// slice -> seq prod_priority
 void ScriptParserData::ReduceSlice(const std::vector<std::unique_ptr<Property>>& props) {
     std::cout << "Reduce: slice -> seq prod_priority" << std::endl;
 }
 
-void ScriptParserData::ReduceProdPriority0(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: prod_priority -> ε" << std::endl;
-}
+// prod_priority -> ε
+void ScriptParserData::ReduceProdPriority0(const std::vector<std::unique_ptr<Property>>& props) {}
 
+// prod_priority -> prod_mark
 void ScriptParserData::ReduceProdPriority1(const std::vector<std::unique_ptr<Property>>& props) {
     std::cout << "Reduce: prod_priority -> prod_mark" << std::endl;
 }
 
+// seq -> symbol
 void ScriptParserData::ReduceSeq0(const std::vector<std::unique_ptr<Property>>& props) {
     std::cout << "Reduce: seq -> symbol" << std::endl;
 }
 
+// seq -> seq symbol
 void ScriptParserData::ReduceSeq1(const std::vector<std::unique_ptr<Property>>& props) {
     std::cout << "Reduce: seq -> seq symbol" << std::endl;
 }
 
-void ScriptParserData::ReduceSymbol0(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: symbol -> id" << std::endl;
-}
+// symbol -> atom symb_priority
+void ScriptParserData::ReduceSymbol(const std::vector<std::unique_ptr<Property>>& props) {}
 
-void ScriptParserData::ReduceSymbol1(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: symbol -> terminal symb_priority" << std::endl;
-}
+// atom -> @terminal
+void ScriptParserData::ReduceAtom0(const std::vector<std::unique_ptr<Property>>& props) {}
 
-void ScriptParserData::ReduceSymbPriority0(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: symb_priority -> ε" << std::endl;
+// atom -> @id
+void ScriptParserData::ReduceAtom1(const std::vector<std::unique_ptr<Property>>& props) {
+    auto* p0 = static_cast<PropertyTerminal*>(props[0].get());
+    Symbol s;
+    s.name = p0->token->Cast<TokenId>().val;
+    prod_bodies_.back().push_back(std::move(s));
 }
-
-void ScriptParserData::ReduceSymbPriority1(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: symb_priority -> symb_mark" << std::endl;
-}
+// symb_priority → @~
+void ScriptParserData::ReduceSymbPriority0(const std::vector<std::unique_ptr<Property>>& props) {}
+// symb_priority → @symb_mark
+void ScriptParserData::ReduceSymbPriority1(const std::vector<std::unique_ptr<Property>>& props) {}
 
 }  // namespace cc::generate

@@ -127,7 +127,7 @@ void CompilerInput::FillB() {
 std::string CompilerInput::CurrentLine() {
     int start = row_begin_.empty() ? 0 : row_begin_.back();
     Mark();
-    Approach('\r');  // 假设 Approach 方法在 AbstractInput 中可用
+    Approach('\r', '\n');  // 假设 Approach 方法在 AbstractInput 中可用
     std::string res = CaptureSubstring(next_, start);
     Recover(true);  // 恢复并消费标记
     return res;

@@ -15,8 +15,7 @@ struct Item;
 struct LR0State;
 
 // LALR 构造结果输出接口
-class LanguageSetter {
-public:
+struct LanguageSetter {
     virtual ~LanguageSetter() = default;
 
     // 输出产生式列表

@@ -23,7 +23,9 @@ DFABuilder::DFABuilder(NFARegexParser& parser)
     : DFABuilder(parser.root_node(), parser.node_id_to_token()) {}
 
 DFABuilder::DFABuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_token)
-    : root_node_(root_node), nfa_node_to_token_(std::move(nfa_node_to_token)) {
+    : root_node_(root_node), nfa_node_to_token_(std::move(nfa_node_to_token)) {}
+
+void DFABuilder::Build(const std::optional<DFASetter*>& setter) {
     VisitNfa([this](NFANode* node) {
         if (node->id() >= nfa_nodes_.size()) {
             nfa_nodes_.resize(node->id() + 1);
@@ -34,9 +36,6 @@ DFABuilder::DFABuilder(NFANode* root_node, std::vector<std::string> nfa_node_to_
         std::cout << "====== NFA Info ======\n";
         PrintNFA();
     }
-}
-
-void DFABuilder::Build(const std::optional<DFASetter*>& setter) {
     BuildCharClassMap();
     ComputeNfaCharClassMask();
     auto dfa = BuildDfaFromNfa();

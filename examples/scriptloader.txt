@@ -46,9 +46,12 @@ seq : symbol
     | seq symbol
     ;
 
-symbol : @id
-       | @terminal symb_priority
+symbol : atom symb_priority
        ;
+
+atom : @terminal
+     | @id
+     ;
 
 symb_priority : @~
               | @symb_mark

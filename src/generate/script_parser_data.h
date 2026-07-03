@@ -7,6 +7,16 @@
 
 #include "compile/lexer.h"
 #include "compile/parser.h"
+#include "lex/dfa_builder.h"
+#include "lex/nfa_regex_parser.h"
+#include "syntax/lalr_parser.h"
+
+namespace cc {
+
+struct DFASetter;
+struct LanguageSetter;
+
+}  // namespace cc
 
 namespace cc::generate {
 
@@ -34,77 +44,102 @@ struct ScriptLexerData : common::LexerDataSupplier {
 
 // ==================== Token Structs ====================
 
-struct TokenId : common::Token {
+using common::CompilerInput;
+using common::Token;
+using common::TokenMatchResult;
+
+struct TokenId : Token {
     std::string val;
     int Type() override;
+    TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& ci) override;
 };
 
-struct TokenStringVal : common::Token {
+struct TokenStringVal : Token {
     std::string val;
     int Type() override;
+    TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& ci) override;
 };
 
-struct TokenTerminal : common::Token {
+struct TokenTerminal : Token {
+    enum class Type { kSingle, kEpsilon, kNormal, kKeyWord } type;
+    std::string name;
+    char ch = 0;
     int Type() override;
+    TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& ci) override;
 };
 
-struct TokenProdMark : common::Token {
+struct TokenProdMark : Token {
+    Associativity assoc = Associativity::kUndefined;
+    int prior = 0;
     int Type() override;
+    TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& ci) override;
 };
 
-struct TokenSymbMark : common::Token {
+struct TokenSymbMark : Token {
+    Associativity assoc = Associativity::kUndefined;
+    int prior = 0;
     int Type() override;
+    TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& ci) override;
 };
 
 // Keyword tokens (token_begin, syntax_begin, block_end) can use TokenSingle or dedicated structs.
 // For simplicity, they are single-char/keyword markers with type = their constant value.
 // The DFA accepts them as "token_begin", "syntax_begin", "block_end" → map to their types.
 
-struct TokenTokenBegin : common::Token {
+struct TokenTokenBegin : Token {
     int Type() override;
 };
 
-struct TokenSyntaxBegin : common::Token {
+struct TokenSyntaxBegin : Token {
     int Type() override;
 };
 
-struct TokenBlockEnd : common::Token {
+struct TokenBlockEnd : Token {
     int Type() override;
 };
 
 // ==================== Property ====================
 
-// Empty property for non-symbol NTs and epsilon
-struct PropertyVoid : common::Property {};
+using common::Property;
+using common::PropertyTerminal;
 
 // ==================== Parser Data ====================
 
-using common::Property;
-
 class ScriptParserData : public common::ParserDataSupplier {
 public:
+    ScriptParserData(DFASetter& dfa_setter, LanguageSetter& lang_setter);
+    ScriptParserData();
+
     int TokenMappersCount() const override;
     int NonTerminalSymbolsCount() const override;
     int TerminalSymbolsCount() const override;
     int StatesCount() const override;
+    int ProductionsCount() const override;
     void InitReduceActions(std::vector<common::ReduceFunc>& vec) override;
     void InitGoto(std::vector<std::vector<int>>& vec) override;
     void InitActions(std::vector<std::vector<int>>& vec) override;
     void InitTokenToSymbol(std::vector<int>& vec) override;
     void InitPropertySuppliers(std::vector<common::PropertySupplier>& vec) override;
-    void InitSymbolsAndProductions(std::vector<common::Symbol>& symbols,
-            std::vector<common::Production>& productions) override;
+    void InitProductions(std::vector<common::Production>& productions) override;
+
+private:
+    DFASetter* dfa_setter_;
+    LanguageSetter* lang_setter_;
+    std::unique_ptr<NFARegexParser> parser_;
+    std::unique_ptr<Syntax> syntax_;
+
+    std::vector<std::vector<Symbol>> prod_bodies_;
 
     //root → script
-    void ReduceRoot(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceRoot(const std::vector<std::unique_ptr<Property>>& props);
     //script → @token_begin tokens @block_end @syntax_begin syntax @block_end
     void ReduceScript(const std::vector<std::unique_ptr<Property>>& props);
     // tokens → token
-    void ReduceTokens0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceTokens0(const std::vector<std::unique_ptr<Property>>& props);
     // tokens → tokens token
-    void ReduceTokens1(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceTokens1(const std::vector<std::unique_ptr<Property>>& props);
     // token → @id ':' @string ';'
-    void ReduceToken(const std::vector<std::unique_ptr<Property>>& props);
+    void ReduceToken(const std::vector<std::unique_ptr<Property>>& props) const;
     // syntax → prod
     void ReduceSyntax0(const std::vector<std::unique_ptr<Property>>& props);
     // syntax → syntax prod
@@ -125,10 +160,12 @@ public:
     void ReduceSeq0(const std::vector<std::unique_ptr<Property>>& props);
     // seq → seq symbol
     void ReduceSeq1(const std::vector<std::unique_ptr<Property>>& props);
-    // symbol → @id
-    void ReduceSymbol0(const std::vector<std::unique_ptr<Property>>& props);
-    // symbol → @terminal symb_priority
-    void ReduceSymbol1(const std::vector<std::unique_ptr<Property>>& props);
+    // symbol -> atom symb_priority
+    void ReduceSymbol(const std::vector<std::unique_ptr<Property>>& props);
+    // atom -> @terminal
+    void ReduceAtom0(const std::vector<std::unique_ptr<Property>>& props);
+    // atom -> @id
+    void ReduceAtom1(const std::vector<std::unique_ptr<Property>>& props);
     // symb_priority → @~
     void ReduceSymbPriority0(const std::vector<std::unique_ptr<Property>>& props);
     // symb_priority → @symb_mark

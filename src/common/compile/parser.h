@@ -41,13 +41,13 @@ struct ParserDataSupplier {
     virtual int NonTerminalSymbolsCount() const = 0;
     virtual int TerminalSymbolsCount() const = 0;
     virtual int StatesCount() const = 0;
+    virtual int ProductionsCount() const = 0;
     virtual void InitReduceActions(std::vector<ReduceFunc>& vec) = 0;
     virtual void InitGoto(std::vector<std::vector<int>>& vec) = 0;
     virtual void InitActions(std::vector<std::vector<int>>& vec) = 0;
     virtual void InitTokenToSymbol(std::vector<int>& vec) = 0;
     virtual void InitPropertySuppliers(std::vector<PropertySupplier>& vec) = 0;
-    virtual void InitSymbolsAndProductions(
-            std::vector<Symbol>& symbols, std::vector<Production>& productions) = 0;
+    virtual void InitProductions(std::vector<Production>& productions) = 0;
     virtual ~ParserDataSupplier() = default;
 };
 
@@ -66,7 +66,6 @@ protected:
     std::vector<std::vector<int>> goto_;
     std::vector<Production> productions_;
     std::vector<PropertySupplier> suppliers_;
-    std::vector<Symbol> symbols_;
     std::vector<ReduceFunc> reduce_actions_;
     virtual void OnFailed(CompilerInput& ci, const std::unique_ptr<Token>& at);
 };

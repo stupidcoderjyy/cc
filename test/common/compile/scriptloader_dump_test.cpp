@@ -90,12 +90,12 @@ public:
     }
 
     void SetAction(int stateId, int symbolId, int type, int target) override {
-        // std::cout << "  vec[" << stateId << "][" << symbolId << "] = " << action_name(type) << " | "
-        //           << target << ";\n";
+        std::cout << "  vec[" << stateId << "][" << symbolId << "] = " << action_name(type) << " | "
+                  << target << ";\n";
     }
 
     void SetGoto(int stateId, int symbolId, int target) override {
-        std::cout << "  vec[" << stateId << "][" << symbolId << "] = " << target << ";\n";
+        // std::cout << "  vec[" << stateId << "][" << symbolId << "] = " << target << ";\n";
     }
 
     void SetStartState(int /*id*/) override {}
@@ -238,9 +238,12 @@ protected:
         syntax_.AddProduction(nt("seq"), I{nt("symbol")});
         syntax_.AddProduction(nt("seq"), I{nt("seq"), nt("symbol")});
 
-        // symbol : @id | @terminal symb_priority
-        syntax_.AddProduction(nt("symbol"), I{t("id")});
-        syntax_.AddProduction(nt("symbol"), I{t("terminal"), nt("symb_priority")});
+        // symbol : atom symb_priority
+        syntax_.AddProduction(nt("symbol"), I{nt("atom"), nt("symb_priority")});
+
+        // atom : @terminal | @id
+        syntax_.AddProduction(nt("atom"), I{t("terminal")});
+        syntax_.AddProduction(nt("atom"), I{t("id")});
 
         // symb_priority : @~ | @symb_priority_mark
         syntax_.AddProduction(nt("symb_priority"), eps);

@@ -8,34 +8,28 @@
 
 namespace cc {
 
-// 辅助：从解析器构建 DfaBuilder（假设只注册了一个正则）
-std::unique_ptr<DFABuilder> MakeBuilderFromParser(NFARegexParser& parser) {
-    auto builder = std::make_unique<DFABuilder>(parser.root_node(), parser.node_id_to_token());
-    builder->BuildCharClassMap();
-    builder->ComputeNfaCharClassMask();
-    return std::move(builder);
-}
-
 // 测试 Next 对单字符 'a' 的 NFA
 TEST(DfaBuilderNextTest, SingleCharA) {
     NFARegexParser parser;
     parser.Register("a", "token_a");  // 正则 "a"，标记为 "token_a"
 
-    auto builder = MakeBuilderFromParser(parser);
+    DFABuilder builder(parser);
+    builder.set_disable_dfa_minimize_(true);
+    builder.Build();
 
     // 获取根节点 ID，构造起始 NFA 集合
     NFAGroup start_group;
     start_group.set(parser.root_node()->id());
 
     // 计算 ε-闭包（根节点无 ε 边，闭包等于自己）
-    auto closure = builder->EpsilonClosure(start_group);
+    auto closure = builder.EpsilonClosure(start_group);
 
     // 获取字符类 ID：只有一个谓词，所有满足 'a' 的字符归为 class 0
-    int class_id = builder->char_to_class()['a'];
-    EXPECT_EQ(builder->class_count(), 2);
+    int class_id = builder.char_to_class()['a'];
+    EXPECT_EQ(builder.class_count(), 2);
 
     // 调用 Next
-    auto next_group = builder->Next(class_id, closure);
+    auto next_group = builder.Next(class_id, closure);
 
     // 预期结果：应包含接受节点（即正则 "a" 的结束节点）
     // parser 的节点中，接受节点是最后设置的结束节点，我们可以从 parser.node_id_to_token() 找到接受节点 ID
@@ -59,16 +53,18 @@ TEST(DfaBuilderNextTest, StarWithEpsilon) {
     NFARegexParser parser;
     parser.Register("a*", "token_star");
 
-    auto builder = MakeBuilderFromParser(parser);
+    DFABuilder builder(parser);
+    builder.set_disable_dfa_minimize_(true);
+    builder.Build();
 
     NFAGroup start_group;
     start_group.set(parser.root_node()->id());
-    auto closure = builder->EpsilonClosure(start_group);
+    auto closure = builder.EpsilonClosure(start_group);
 
     // 由于 "a*" 的起始节点有 ε 边指向自身和接受节点，闭包应包含多个节点
     // 获取字符类
-    int class_a = builder->char_to_class()['a'];
-    auto next_group = builder->Next(class_a, closure);
+    int class_a = builder.char_to_class()['a'];
+    auto next_group = builder.Next(class_a, closure);
 
     // 预期：Next 后应包含接受节点（因为 a* 允许至少一个 a）
     bool found_accept = false;
@@ -81,8 +77,8 @@ TEST(DfaBuilderNextTest, StarWithEpsilon) {
     EXPECT_TRUE(found_accept);
 
     // 再对非 'a' 字符（如 'b'）测试，应得到空集（因为 b 不匹配 a*）
-    int class_b = builder->char_to_class()['b'];  // b 属于其他类（未匹配任何谓词）
-    auto next_b = builder->Next(class_b, closure);
+    int class_b = builder.char_to_class()['b'];  // b 属于其他类（未匹配任何谓词）
+    auto next_b = builder.Next(class_b, closure);
     EXPECT_TRUE(next_b.none());  // 应为空
 }
 
@@ -91,18 +87,20 @@ TEST(DfaBuilderNextTest, OrAB) {
     NFARegexParser parser;
     parser.Register("a|b", "token_or");
 
-    auto builder = MakeBuilderFromParser(parser);
+    DFABuilder builder(parser);
+    builder.set_disable_dfa_minimize_(true);
+    builder.Build();
 
     NFAGroup start_group;
     start_group.set(parser.root_node()->id());
-    auto closure = builder->EpsilonClosure(start_group);
+    auto closure = builder.EpsilonClosure(start_group);
 
     // 获取字符类
-    int class_a = builder->char_to_class()['a'];
-    int class_b = builder->char_to_class()['b'];
+    int class_a = builder.char_to_class()['a'];
+    int class_b = builder.char_to_class()['b'];
 
-    auto next_a = builder->Next(class_a, closure);
-    auto next_b = builder->Next(class_b, closure);
+    auto next_a = builder.Next(class_a, closure);
+    auto next_b = builder.Next(class_b, closure);
 
     // 两个结果都非空，且应不相同（指向不同的接受节点）
     EXPECT_FALSE(next_a.none());

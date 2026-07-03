@@ -15,16 +15,18 @@ Parser::Parser(ParserDataSupplier& core)
       actions_(std::vector(core.StatesCount(), std::vector(core.TerminalSymbolsCount(), 0))),
       goto_(std::vector(core.StatesCount(), std::vector(core.NonTerminalSymbolsCount(), 0))),
       suppliers_(std::vector<PropertySupplier>(core.NonTerminalSymbolsCount())),
-      reduce_actions_(core.NonTerminalSymbolsCount(), nullptr) {
+      reduce_actions_(core.ProductionsCount(), nullptr) {
+    productions_.resize(core.ProductionsCount());
     core.InitActions(actions_);
     core.InitGoto(goto_);
     core.InitTokenToSymbol(token_to_symbol_);
     core.InitPropertySuppliers(suppliers_);
-    core.InitSymbolsAndProductions(symbols_, productions_);
+    core.InitProductions(productions_);
     core.InitReduceActions(reduce_actions_);
 }
 
 void Parser::Parse(Lexer& lexer, CompilerInput& ci) {
+    ci.Skip('\r', '\n', ' ');
     ci.Mark();
     std::vector<int> states;
     std::vector<std::unique_ptr<Property>> properties;

@@ -23,6 +23,8 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureSingleNode) {
 
     // 根节点就是 n0
     DFABuilder builder(n0, {});
+    builder.set_disable_dfa_minimize_(true);
+    builder.Build();
 
     NFAGroup group;
     group.set(n0->id());
@@ -46,7 +48,9 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureChain) {
     n0->AddEpsilonEdge(n1);
     n1->AddEpsilonEdge(n2);
 
-    DFABuilder builder(n0, {});  // n0 为根，n1/n2 通过 ε 边可达
+    DFABuilder builder(n0, {});
+    builder.set_disable_dfa_minimize_(true);
+    builder.Build();
 
     NFAGroup group;
     group.set(n0->id());
@@ -73,6 +77,8 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureCycle) {
     n1->AddEpsilonEdge(n0);
 
     DFABuilder builder(n0, {});
+    builder.set_disable_dfa_minimize_(true);
+    builder.Build();
 
     NFAGroup group;
     group.set(n0->id());
@@ -96,7 +102,9 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureIgnoreCharEdge) {
     // 字符边：从 n0 到 n1
     n0->AddCharEdge([](int) { return true; }, n1);
 
-    DFABuilder builder(n0, {});  // n1 通过字符边可达，但 ε 闭包应忽略
+    DFABuilder builder(n0, {});
+    builder.set_disable_dfa_minimize_(true);
+    builder.Build();
 
     NFAGroup group;
     group.set(n0->id());
@@ -133,7 +141,9 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureMultipleStart) {
     // 虚拟根通过 ε 边到 n0 和 n1
     root->AddEpsilonEdge(n0, n1);  // 使用双 ε 边
 
-    DFABuilder builder(root, {});  // 所有节点从 root 可达
+    DFABuilder builder(root, {});
+    builder.set_disable_dfa_minimize_(true);
+    builder.Build();
 
     NFAGroup group;
     group.set(n0->id());
@@ -163,6 +173,8 @@ TEST_F(DfaBuilderEpsilonClosureTest, EpsilonClosureCache) {
     n0->AddEpsilonEdge(n1);
 
     DFABuilder builder(n0, {});
+    builder.set_disable_dfa_minimize_(true);
+    builder.Build();
 
     NFAGroup group;
     group.set(n0->id());
