@@ -16,6 +16,7 @@ public:
 
     // 添加产生式 head -> body，返回产生式ID
     // 首次调用时自动插入 ROOT -> head 作为产生式0
+    int AddProduction(const Production& temp);
     int AddProduction(const Symbol& head, std::initializer_list<Symbol> body);
     int AddProduction(const Symbol& head, const std::vector<Symbol>& body);
 

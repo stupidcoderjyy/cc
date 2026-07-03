@@ -21,6 +21,7 @@ struct Token {
     virtual ~Token() = default;
     template <class T>
     T& Cast() {
+        static_assert(std::is_base_of_v<Token, T>, "T must be a subclass of Property");
         return dynamic_cast<T&>(*this);
     }
 };

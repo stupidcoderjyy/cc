@@ -35,6 +35,9 @@ std::string Action::ToString() const {
 LALRBuilder::LALRBuilder(Syntax& syntax) : syntax_(&syntax) {}
 
 void LALRBuilder::Build(const std::optional<LanguageSetter*>& setter) {
+    if (syntax_->productions().empty()) {
+        throw std::runtime_error("empty production");
+    }
     InitSymbols();
     BuildProductionIndex();
     ComputeFirstSets();

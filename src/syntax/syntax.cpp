@@ -12,6 +12,11 @@ Syntax::Syntax() {
     RegisterSymbol(root_symbol_);
 }
 
+int Syntax::AddProduction(const Production& temp) {
+    Symbol head(temp.head.name, SymbolType::kNonTerminal, temp.priority, temp.assoc);
+    return AddProduction(head, temp.body);
+}
+
 int Syntax::AddProduction(const Symbol& head, std::initializer_list<Symbol> body) {
     return AddProduction(head, std::vector(body.begin(), body.end()));
 }

@@ -1,6 +1,5 @@
 #include "nfa_regex_parser.h"
 
-#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -32,24 +31,6 @@ void NFARegexParser::Register(std::string regex, const std::string& token) {
         root_node_ = new_start.get();
         MoveNode(new_start);
     }
-}
-
-void NFARegexParser::RegisterSingles(std::initializer_list<char> chs) {
-    if (!singles_.empty()) {
-        throw std::runtime_error("singles already registered");
-    }
-    singles_.insert(chs);
-    std::ostringstream oss;
-    oss << '[';
-    for (char ch : chs) {
-        if (std::isalnum(ch)) {
-            oss << ch;
-        } else {
-            oss << '\\' << ch;
-        }
-    }
-    oss << ']';
-    Register(oss.str(), "single");
 }
 
 void NFARegexParser::SetAcceptedNode(NFA& target, const std::string& token) {

@@ -3,6 +3,7 @@
 
 #include <bitset>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -19,7 +20,35 @@ using common::kMaxChars;
 class NFARegexParser {
 public:
     void Register(std::string regex, const std::string& token);
-    void RegisterSingles(std::initializer_list<char> chs);
+
+    template <typename Range>
+    void RegisterSingles(const Range& chs) {
+        if (!singles_.empty()) {
+            throw std::runtime_error("singles already registered");
+        }
+
+        using std::begin;
+        using std::end;
+        auto it = begin(chs);
+        auto it_end = end(chs);
+        singles_.insert(it, it_end);
+
+        std::ostringstream oss;
+        oss << '[';
+        for (char ch : chs) {  // 假设元素可转换为 char
+            if (std::isalnum(static_cast<unsigned char>(ch))) {
+                oss << ch;
+            } else {
+                oss << '\\' << ch;
+            }
+        }
+        oss << ']';
+        Register(oss.str(), "single");
+    }
+
+    void RegisterSingles(std::initializer_list<char> chs) {
+        RegisterSingles<std::initializer_list<char>>(chs);
+    }
 
     NFANode* root_node() const { return root_node_; }
     std::vector<std::string> node_id_to_token() const { return node_id_to_token_; }

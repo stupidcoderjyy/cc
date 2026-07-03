@@ -23,7 +23,16 @@ struct Production final {
     std::vector<Symbol> body;
 };
 
-struct Property {};
+struct PropertyTerminal;
+
+struct Property {
+    virtual ~Property() = default;
+    template <class T>
+    T* Cast() {
+        static_assert(std::is_base_of_v<Property, T>, "T must be a subclass of Property");
+        return dynamic_cast<T*>(this);
+    }
+};
 
 struct PropertyTerminal : Property {
     explicit PropertyTerminal(std::unique_ptr<Token> token) : token(std::move(token)) {}

@@ -107,8 +107,8 @@ using common::PropertyTerminal;
 
 class ScriptParserData : public common::ParserDataSupplier {
 public:
-    ScriptParserData(DFASetter& dfa_setter, LanguageSetter& lang_setter);
-    ScriptParserData();
+    explicit ScriptParserData(const std::optional<DFASetter*>& dfa_setter = std::nullopt,
+            const std::optional<LanguageSetter*>& lang_setter = std::nullopt);
 
     int TokenMappersCount() const override;
     int NonTerminalSymbolsCount() const override;
@@ -123,17 +123,20 @@ public:
     void InitProductions(std::vector<common::Production>& productions) override;
 
 private:
-    DFASetter* dfa_setter_;
-    LanguageSetter* lang_setter_;
+    std::optional<DFASetter*> dfa_setter_;
+    std::optional<LanguageSetter*> lang_setter_;
     std::unique_ptr<NFARegexParser> parser_;
     std::unique_ptr<Syntax> syntax_;
 
-    std::vector<std::vector<Symbol>> prod_bodies_;
+    std::vector<Production> productions_;
+    std::unordered_set<char> singles_;
+
+    const std::string epsilon_string_name_{'\000'};
 
     //root → script
     // void ReduceRoot(const std::vector<std::unique_ptr<Property>>& props);
     //script → @token_begin tokens @block_end @syntax_begin syntax @block_end
-    void ReduceScript(const std::vector<std::unique_ptr<Property>>& props);
+    void ReduceScript(const std::vector<std::unique_ptr<Property>>& props) const;
     // tokens → token
     // void ReduceTokens0(const std::vector<std::unique_ptr<Property>>& props);
     // tokens → tokens token
@@ -141,33 +144,33 @@ private:
     // token → @id ':' @string ';'
     void ReduceToken(const std::vector<std::unique_ptr<Property>>& props) const;
     // syntax → prod
-    void ReduceSyntax0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSyntax0(const std::vector<std::unique_ptr<Property>>& props);
     // syntax → syntax prod
-    void ReduceSyntax1(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSyntax1(const std::vector<std::unique_ptr<Property>>& props);
     // prod → @id ':' body ';'
     void ReduceProd(const std::vector<std::unique_ptr<Property>>& props);
     // body → slice
-    void ReduceBody0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceBody0(const std::vector<std::unique_ptr<Property>>& props);
     // body → body '|' slice
-    void ReduceBody1(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceBody1(const std::vector<std::unique_ptr<Property>>& props);
     // slice → seq prod_priority
     void ReduceSlice(const std::vector<std::unique_ptr<Property>>& props);
     // prod_priority → @~
-    void ReduceProdPriority0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceProdPriority0(const std::vector<std::unique_ptr<Property>>& props);
     // prod_priority → @prod_mark
     void ReduceProdPriority1(const std::vector<std::unique_ptr<Property>>& props);
     // seq → symbol
-    void ReduceSeq0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSeq0(const std::vector<std::unique_ptr<Property>>& props);
     // seq → seq symbol
-    void ReduceSeq1(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSeq1(const std::vector<std::unique_ptr<Property>>& props);
     // symbol -> atom symb_priority
-    void ReduceSymbol(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSymbol(const std::vector<std::unique_ptr<Property>>& props);
     // atom -> @terminal
     void ReduceAtom0(const std::vector<std::unique_ptr<Property>>& props);
     // atom -> @id
     void ReduceAtom1(const std::vector<std::unique_ptr<Property>>& props);
     // symb_priority → @~
-    void ReduceSymbPriority0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSymbPriority0(const std::vector<std::unique_ptr<Property>>& props);
     // symb_priority → @symb_mark
     void ReduceSymbPriority1(const std::vector<std::unique_ptr<Property>>& props);
 };

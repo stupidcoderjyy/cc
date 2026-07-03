@@ -4,8 +4,6 @@
 
 #include "script_parser_data.h"
 
-#include <iostream>
-
 namespace cc::generate {
 
 // ==================== Token Structs Impl ====================
@@ -41,7 +39,7 @@ TokenMatchResult TokenId::OnMatched(const std::string& lexeme, CompilerInput& ci
 }
 
 TokenMatchResult TokenStringVal::OnMatched(const std::string& lexeme, CompilerInput& ci) {
-    val = lexeme.substr(0, lexeme.length() - 2);
+    val = lexeme.substr(1, lexeme.length() - 2);
     return TokenMatchResult::kAccept;
 }
 
@@ -307,9 +305,6 @@ int ScriptParserData::ProductionsCount() const {
 }
 
 void ScriptParserData::InitReduceActions(std::vector<common::ReduceFunc>& vec) {
-    if (!dfa_setter_ || !lang_setter_) {
-        return;
-    }
     // ROOT -> script
     // vec[0] = [this](auto& p) { ReduceRoot(p); };
     // script -> token_begin tokens block_end syntax_begin syntax block_end
@@ -321,33 +316,33 @@ void ScriptParserData::InitReduceActions(std::vector<common::ReduceFunc>& vec) {
     // token -> id : string ;
     vec[4] = [this](auto& p) { ReduceToken(p); };
     // syntax -> prod
-    vec[5] = [this](auto& p) { ReduceSyntax0(p); };
+    // vec[5] = [this](auto& p) { ReduceSyntax0(p); };
     // syntax -> syntax prod
-    vec[6] = [this](auto& p) { ReduceSyntax1(p); };
+    // vec[6] = [this](auto& p) { ReduceSyntax1(p); };
     // prod -> id : body ;
     vec[7] = [this](auto& p) { ReduceProd(p); };
     // body -> slice
-    vec[8] = [this](auto& p) { ReduceBody0(p); };
+    // vec[8] = [this](auto& p) { ReduceBody0(p); };
     // body -> body | slice
-    vec[9] = [this](auto& p) { ReduceBody1(p); };
+    // vec[9] = [this](auto& p) { ReduceBody1(p); };
     // slice -> seq prod_priority
     vec[10] = [this](auto& p) { ReduceSlice(p); };
     // prod_priority -> ε
-    vec[11] = [this](auto& p) { ReduceProdPriority0(p); };
+    // vec[11] = [this](auto& p) { ReduceProdPriority0(p); };
     // prod_priority -> prod_mark
     vec[12] = [this](auto& p) { ReduceProdPriority1(p); };
     // seq -> symbol
-    vec[13] = [this](auto& p) { ReduceSeq0(p); };
+    // vec[13] = [this](auto& p) { ReduceSeq0(p); };
     // seq -> seq symbol
-    vec[14] = [this](auto& p) { ReduceSeq1(p); };
+    // vec[14] = [this](auto& p) { ReduceSeq1(p); };
     // symbol -> atom symb_priority
-    vec[15] = [this](auto& p) { ReduceSymbol(p); };
+    // vec[15] = [this](auto& p) { ReduceSymbol(p); };
     // atom -> terminal
     vec[16] = [this](auto& p) { ReduceAtom0(p); };
     // atom -> id
     vec[17] = [this](auto& p) { ReduceAtom1(p); };
     // symb_priority -> ε
-    vec[18] = [this](auto& p) { ReduceSymbPriority0(p); };
+    // vec[18] = [this](auto& p) { ReduceSymbPriority0(p); };
     // symb_priority -> symb_mark
     vec[19] = [this](auto& p) { ReduceSymbPriority1(p); };
 }
@@ -527,22 +522,25 @@ void ScriptParserData::InitProductions(std::vector<common::Production>& prods) {
     prods[19] = {19, {false, 10}, {{true, 1}}};               // symb_priority → symb_mark
 }
 
-ScriptParserData::ScriptParserData(DFASetter& dfa_setter, LanguageSetter& lang_setter)
-    : dfa_setter_(&dfa_setter), lang_setter_(&lang_setter) {
+ScriptParserData::ScriptParserData(const std::optional<DFASetter*>& dfa_setter,
+        const std::optional<LanguageSetter*>& lang_setter)
+    : dfa_setter_(dfa_setter), lang_setter_(lang_setter) {
     parser_ = std::make_unique<NFARegexParser>();
     syntax_ = std::make_unique<Syntax>();
+    productions_.push_back({});
 }
-
-ScriptParserData::ScriptParserData() : dfa_setter_(), lang_setter_() {}
 
 // ROOT -> script
 // void ScriptParserData::ReduceRoot(const std::vector<std::unique_ptr<Property>>& props) {}
 
 // script -> token_begin tokens block_end syntax_begin syntax block_end
-void ScriptParserData::ReduceScript(const std::vector<std::unique_ptr<Property>>& props) {
+void ScriptParserData::ReduceScript(const std::vector<std::unique_ptr<Property>>& props) const {
+    parser_->RegisterSingles(singles_);
     DFABuilder dfa_builder(*parser_);
+    dfa_builder.set_print_debug_info(true);
     dfa_builder.Build(dfa_setter_);
     LALRBuilder lalr_builder(*syntax_);
+    lalr_builder.set_print_debug_info(true);
     lalr_builder.Build(lang_setter_);
 }
 
@@ -554,77 +552,107 @@ void ScriptParserData::ReduceScript(const std::vector<std::unique_ptr<Property>>
 
 // token -> id : string ;
 void ScriptParserData::ReduceToken(const std::vector<std::unique_ptr<Property>>& props) const {
-    auto* p0 = static_cast<PropertyTerminal*>(props[0].get());
-    auto* p2 = static_cast<PropertyTerminal*>(props[2].get());
-    auto id = p0->token->Cast<TokenId>().val;
-    auto regex = p2->token->Cast<TokenStringVal>().val;
+    auto& t0 = static_cast<PropertyTerminal*>(props[0].get())->token->Cast<TokenId>();
+    auto& t2 = static_cast<PropertyTerminal*>(props[2].get())->token->Cast<TokenStringVal>();
+    auto id = t0.val;
+    auto regex = t2.val;
     parser_->Register(regex, id);
 }
 
 // syntax -> prod
-void ScriptParserData::ReduceSyntax0(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: syntax -> prod" << std::endl;
-}
+// void ScriptParserData::ReduceSyntax0(const std::vector<std::unique_ptr<Property>>& props) {}
 
 // syntax -> syntax prod
-void ScriptParserData::ReduceSyntax1(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: syntax -> syntax prod" << std::endl;
-}
+// void ScriptParserData::ReduceSyntax1(const std::vector<std::unique_ptr<Property>>& props) {}
 
-// prod -> id : body ;
+// prod -> @id : body ;
 void ScriptParserData::ReduceProd(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: prod -> id : body ;" << std::endl;
+    auto& token = props[0]->Cast<PropertyTerminal>()->token->Cast<TokenId>();
+    Symbol s(token.val, SymbolType::kNonTerminal);
+    productions_.erase(productions_.end() - 1);
+    for (auto& prod : productions_) {
+        prod.head = s;
+        syntax_->AddProduction(prod);
+    }
+    productions_.clear();
+    productions_.push_back({});
 }
 
 // body -> slice
-void ScriptParserData::ReduceBody0(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: body -> slice" << std::endl;
-}
+// void ScriptParserData::ReduceBody0(const std::vector<std::unique_ptr<Property>>& props) {}
 
 // body -> body | slice
-void ScriptParserData::ReduceBody1(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: body -> body | slice" << std::endl;
-}
+// void ScriptParserData::ReduceBody1(const std::vector<std::unique_ptr<Property>>& props) {}
 
 // slice -> seq prod_priority
 void ScriptParserData::ReduceSlice(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: slice -> seq prod_priority" << std::endl;
+    productions_.push_back({});
 }
 
 // prod_priority -> ε
-void ScriptParserData::ReduceProdPriority0(const std::vector<std::unique_ptr<Property>>& props) {}
+// void ScriptParserData::ReduceProdPriority0(const std::vector<std::unique_ptr<Property>>& props) {}
 
 // prod_priority -> prod_mark
 void ScriptParserData::ReduceProdPriority1(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: prod_priority -> prod_mark" << std::endl;
+    auto& token = props[0]->Cast<PropertyTerminal>()->token->Cast<TokenProdMark>();
+    auto& prod = productions_.back();
+    prod.assoc = token.assoc;
+    prod.priority = token.prior;
 }
 
 // seq -> symbol
-void ScriptParserData::ReduceSeq0(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: seq -> symbol" << std::endl;
-}
+// void ScriptParserData::ReduceSeq0(const std::vector<std::unique_ptr<Property>>& props) {}
 
 // seq -> seq symbol
-void ScriptParserData::ReduceSeq1(const std::vector<std::unique_ptr<Property>>& props) {
-    std::cout << "Reduce: seq -> seq symbol" << std::endl;
-}
+// void ScriptParserData::ReduceSeq1(const std::vector<std::unique_ptr<Property>>& props) {}
 
 // symbol -> atom symb_priority
-void ScriptParserData::ReduceSymbol(const std::vector<std::unique_ptr<Property>>& props) {}
+// void ScriptParserData::ReduceSymbol(const std::vector<std::unique_ptr<Property>>& props) {}
 
 // atom -> @terminal
-void ScriptParserData::ReduceAtom0(const std::vector<std::unique_ptr<Property>>& props) {}
+void ScriptParserData::ReduceAtom0(const std::vector<std::unique_ptr<Property>>& props) {
+    auto& token = props[0]->Cast<PropertyTerminal>()->token->Cast<TokenTerminal>();
+    Symbol s;
+    s.type = SymbolType::kTerminal;
+    switch (token.type) {
+        case TokenTerminal::Type::kSingle:
+            singles_.insert(token.ch);
+            s.name = std::string{token.ch};
+            break;
+        case TokenTerminal::Type::kEpsilon: {
+            s.name = epsilon_string_name_;
+            break;
+        }
+        case TokenTerminal::Type::kNormal:
+            s.name = token.name;
+            break;
+        case TokenTerminal::Type::kKeyWord:
+            // 暂不支持
+            return;
+    }
+    productions_.back().body.push_back(std::move(s));
+}
 
 // atom -> @id
 void ScriptParserData::ReduceAtom1(const std::vector<std::unique_ptr<Property>>& props) {
-    auto* p0 = static_cast<PropertyTerminal*>(props[0].get());
+    auto& token = props[0]->Cast<PropertyTerminal>()->token->Cast<TokenId>();
     Symbol s;
-    s.name = p0->token->Cast<TokenId>().val;
-    prod_bodies_.back().push_back(std::move(s));
+    s.name = token.val;
+    auto& body = productions_.back().body;
+    if (!body.empty() && body.back().name == epsilon_string_name_) {
+        throw std::runtime_error("You cannot add symbols to an epsilon production");
+    }
+    body.push_back(std::move(s));
 }
 // symb_priority → @~
-void ScriptParserData::ReduceSymbPriority0(const std::vector<std::unique_ptr<Property>>& props) {}
+// void ScriptParserData::ReduceSymbPriority0(const std::vector<std::unique_ptr<Property>>& props) {}
+
 // symb_priority → @symb_mark
-void ScriptParserData::ReduceSymbPriority1(const std::vector<std::unique_ptr<Property>>& props) {}
+void ScriptParserData::ReduceSymbPriority1(const std::vector<std::unique_ptr<Property>>& props) {
+    auto& token = props[0]->Cast<PropertyTerminal>()->token->Cast<TokenSymbMark>();
+    auto& symbol = productions_.back().body.back();
+    symbol.assoc = token.assoc;
+    symbol.priority = token.prior;
+}
 
 }  // namespace cc::generate
