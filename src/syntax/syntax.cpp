@@ -75,16 +75,16 @@ void Syntax::SetSymbolProperties(const Symbol& sym, int priority, Associativity 
 }
 
 void Syntax::SetProductionPriority(int prodId, int priority) {
-    auto it = std::ranges::find_if(productions_,
-                                   [prodId](const Production& p) { return p.id == prodId; });
+    auto it = std::ranges::find_if(
+            productions_, [prodId](const Production& p) { return p.id == prodId; });
     if (it != productions_.end()) {
         it->priority = priority;
     }
 }
 
 void Syntax::SetProductionAssociativity(int prodId, Associativity assoc) {
-    auto it = std::ranges::find_if(productions_,
-                                   [prodId](const Production& p) { return p.id == prodId; });
+    auto it = std::ranges::find_if(
+            productions_, [prodId](const Production& p) { return p.id == prodId; });
     if (it != productions_.end()) {
         it->assoc = assoc;
     }

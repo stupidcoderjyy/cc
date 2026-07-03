@@ -29,6 +29,8 @@ inline constexpr int BG_PURPLE = 45;
 inline constexpr int BG_CYAN = 46;
 inline constexpr int BG_WHITE = 47;
 
+std::string DisplayChar(int ch);
+
 // ---------- 底层控制 ----------
 // 开始样式设置（支持样式、前景色、背景色）
 void Begin(int style, int fg, int bg, std::ostream& os = std::cout);

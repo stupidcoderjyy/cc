@@ -42,6 +42,6 @@ CompileError& CompileError::SetPos(int start, int end) {
 
 std::string CompileError::FormatErrorMessage() const {
     return std::format("{}:{}:{}: {}\n    {}\n{}{}", file_path_, row_, start_, msg_, line_,
-                       std::string(start_ + 4, ' '), std::string(end_ - start_ + 1, '^'));
+            std::string(start_ + 4, ' '), std::string(end_ - start_ + 1, '^'));
 }
 }  // namespace common

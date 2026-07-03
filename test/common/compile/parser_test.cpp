@@ -109,9 +109,9 @@ public:
 
     void InitActions(std::vector<std::vector<int>>& vec) override {
         vec.assign(3, std::vector(2, 0));
-        vec[0][1] = 2 << 16 | kActionShift;   // state 0 on 'a': SHIFT → state 1
-        vec[1][0] = 3 << 16 | kActionReduce;  // state 1 on '$': REDUCE prod 1
-        vec[2][0] = 1 << 16 | kActionAccept;  // state 2 on '$': ACCEPT
+        vec[0][1] = kActionShift | 1;   // state 0 on 'a': SHIFT → state 1
+        vec[1][0] = kActionReduce | 1;  // state 1 on '$': REDUCE prod 1
+        vec[2][0] = kActionAccept;      // state 2 on '$': ACCEPT
     }
 
     void InitTokenToSymbol(std::vector<int>& vec) override {
@@ -126,8 +126,8 @@ public:
         vec[1] = [] { return std::make_unique<Property>(); };
     }
 
-    void InitSymbolsAndProductions(std::vector<Symbol>& symbols,
-                                   std::vector<Production>& prods) override {
+    void InitSymbolsAndProductions(
+            std::vector<Symbol>& symbols, std::vector<Production>& prods) override {
         symbols.resize(2);
         symbols[0] = {false, 0};
         symbols[1] = {false, 1};
@@ -145,7 +145,8 @@ protected:
         NFARegexParser parser;
         parser.RegisterSingles({'a'});
         TestDataSupplier tds;
-        DFABuilder builder(parser, &tds);
+        DFABuilder builder(parser);
+        builder.Build(&tds);
         lexer_ = std::make_unique<Lexer>(tds);
 
         parser_data_ = std::make_unique<TestParserDataSupplier>();

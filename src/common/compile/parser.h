@@ -46,12 +46,12 @@ struct ParserDataSupplier {
     virtual void InitActions(std::vector<std::vector<int>>& vec) = 0;
     virtual void InitTokenToSymbol(std::vector<int>& vec) = 0;
     virtual void InitPropertySuppliers(std::vector<PropertySupplier>& vec) = 0;
-    virtual void InitSymbolsAndProductions(std::vector<Symbol>& symbols,
-                                           std::vector<Production>& productions) = 0;
+    virtual void InitSymbolsAndProductions(
+            std::vector<Symbol>& symbols, std::vector<Production>& productions) = 0;
     virtual ~ParserDataSupplier() = default;
 };
 
-enum ParserAction { kActionAccept = 1, kActionShift = 2, kActionReduce = 3 };
+enum ParserAction { kActionAccept = 1 << 16, kActionShift = 2 << 16, kActionReduce = 3 << 16 };
 
 class Parser {
 public:

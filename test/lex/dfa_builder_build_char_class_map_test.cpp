@@ -13,8 +13,9 @@ namespace cc {
 class DfaBuilderBuildCharClassMapTest : public testing::Test {
 protected:
     // 辅助函数：检查所有字符是否按签名正确分组
-    static void CheckClasses(const std::vector<int>& char_to_class, int class_count,
-                             const std::vector<CharPredicate>& predicates) {
+    static void CheckClasses(const std::vector<int>& char_to_class,
+            int class_count,
+            const std::vector<CharPredicate>& predicates) {
         std::unordered_map<std::vector<bool>, int> signature_to_class;
         for (int c = 0; c < kMaxChars; ++c) {
             std::vector<bool> sig;
@@ -25,11 +26,11 @@ protected:
                 signature_to_class[sig] = char_to_class[c];
             } else {
                 EXPECT_EQ(it->second, char_to_class[c])
-                    << "Character " << c << " has inconsistent class mapping.";
+                        << "Character " << c << " has inconsistent class mapping.";
             }
         }
         EXPECT_EQ(signature_to_class.size(), class_count)
-            << "Number of classes does not match number of distinct signatures.";
+                << "Number of classes does not match number of distinct signatures.";
     }
 };
 
@@ -111,7 +112,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, MultiplePredicates) {
     parser.Register(R"([a-zA-Z_][a-zA-Z0-9_]*)", "alnum");
     parser.Register(R"("[^"]*")", "string");
     parser.RegisterSingles(
-        {'+', '-', '*', '/', '=', '<', '>', '!', '(', ')', '{', '}', '[', ']', ';', ',', '.'});
+            {'+', '-', '*', '/', '=', '<', '>', '!', '(', ')', '{', '}', '[', ']', ';', ',', '.'});
     DFABuilder builder(parser);
 
     // 6 个互不等价的谓词产生 5 种字符签名
@@ -133,8 +134,8 @@ TEST_F(DfaBuilderBuildCharClassMapTest, MultiplePredicates) {
                c == ';' || c == ',' || c == '.';
     };
 
-    std::vector<CharPredicate> predicates = {p_digit, p_alpha_us,  p_alnum_us,
-                                             p_quote, p_not_quote, p_singles};
+    std::vector<CharPredicate> predicates = {
+            p_digit, p_alpha_us, p_alnum_us, p_quote, p_not_quote, p_singles};
     CheckClasses(builder.char_to_class(), builder.class_count(), predicates);
 }
 

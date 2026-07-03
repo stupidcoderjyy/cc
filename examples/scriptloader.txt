@@ -1,14 +1,14 @@
 %%TOKEN
 
 id: "\a\w*";
-string: "\"[^\"]*\";
+string: "\"[^\"]*\"";
 token_begin: "%%TOKEN";
 syntax_begin: "%%SYNTAX";
 block_end: "%%";
 
 terminal: "@($\a+|\a+|~)|'(.|\\.)'";
-prod_mark: "%\d*[rRlL]";
-symb_mark: "$\d*[rRlL]";
+prod_mark: "%\d*[rRlL]?";
+symb_mark: "$\d*[rRlL]?";
 
 %%
 

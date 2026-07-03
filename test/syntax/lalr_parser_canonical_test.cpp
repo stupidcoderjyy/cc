@@ -104,7 +104,7 @@ TEST_F(LALRBuilderCanonicalTest, NoDuplicateStates) {
     for (size_t i = 0; i < builder.lr0_states().size(); ++i) {
         for (size_t j = i + 1; j < builder.lr0_states().size(); ++j) {
             EXPECT_NE(builder.lr0_states()[i].items, builder.lr0_states()[j].items)
-                << "State " << i << " and " << j << " have identical item sets";
+                    << "State " << i << " and " << j << " have identical item sets";
         }
     }
 }

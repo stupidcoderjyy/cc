@@ -226,26 +226,33 @@ void NFARegexParser::Escape(std::bitset<kMaxChars>& bitset) const {
             SetBitset(bitset, 'A', 'Z');
             SetBitset(bitset, '0', '9');
             bitset.set('_');
+            break;
         case 'U':
         case 'u':
             SetBitset(bitset, 'a', 'z');
             SetBitset(bitset, 'A', 'Z');
             SetBitset(bitset, '0', '9');
+            break;
         case 'H':
         case 'h':
             SetBitset(bitset, 'a', 'f');
             SetBitset(bitset, 'A', 'F');
             SetBitset(bitset, '0', '9');
+            break;
         case 'A':
         case 'a':
             SetBitset(bitset, 'a', 'z');
             SetBitset(bitset, 'A', 'Z');
+            break;
         case 'n':
             bitset.set('\n');
+            break;
         case 't':
             bitset.set('\t');
+            break;
         default:
             bitset.set(e);
+            break;
     }
 }
 

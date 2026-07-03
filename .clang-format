@@ -6,6 +6,17 @@ IndentWidth: 4
 TabWidth: 4
 UseTab: Never
 
+# ----- 关键修改 -----
+# 1. 禁止括号对齐，使用连续缩进
+AlignAfterOpenBracket: false
+
+# 2. 设置续行缩进为 IndentWidth 的两倍（8 空格）
+ContinuationIndentWidth: 8
+
+# 3. 允许函数参数按行打包（若希望每个参数单独一行，可设为 false）
+BinPackParameters: false   # 改为 false 可强制每个参数单独一行；若为 true，clang-format 会在行数不够时压缩参数，但仍受 AlignAfterOpenBracket 控制
+# ------------------
+
 # 访问修饰符缩进偏移
 AccessModifierOffset: -4
 
@@ -38,7 +49,7 @@ PointerAlignment: Left
 # 保留文件开头的空行
 KeepEmptyLinesAtTheStartOfBlocks: false
 
-# 注释处理：只调整缩进，不重新排版内容（关键修正）
+# 注释处理：只调整缩进，不重新排版内容
 ReflowComments: Never
 
 # 自动排序 include 头文件

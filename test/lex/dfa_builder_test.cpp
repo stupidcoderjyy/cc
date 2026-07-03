@@ -43,8 +43,8 @@ public:
 
     void ExpectStartState(int expected) const { EXPECT_EQ(start_state, expected); }
 
-    void ExpectStateAccepted(int stateId, bool expected,
-                             const std::string& expectedToken = "") const {
+    void ExpectStateAccepted(
+            int stateId, bool expected, const std::string& expectedToken = "") const {
         auto it = state_info.find(stateId);
         ASSERT_NE(it, state_info.end()) << "State " << stateId << " not found";
         EXPECT_EQ(it->second.first, expected);
@@ -56,7 +56,7 @@ public:
         ASSERT_NE(it1, transitions.end()) << "No transitions from state " << from;
         auto it2 = it1->second.find(inputClass);
         ASSERT_NE(it2, it1->second.end())
-            << "No transition for class " << inputClass << " from state " << from;
+                << "No transition for class " << inputClass << " from state " << from;
         EXPECT_EQ(it2->second, to);
     }
 
@@ -65,7 +65,7 @@ public:
         if (it1 == transitions.end()) return;
         auto it2 = it1->second.find(inputClass);
         EXPECT_EQ(it2, it1->second.end())
-            << "Unexpected transition for class " << inputClass << " from state " << from;
+                << "Unexpected transition for class " << inputClass << " from state " << from;
     }
 
     int GetClassForChar(char ch) const { return char_to_class[static_cast<unsigned char>(ch)]; }
@@ -78,7 +78,8 @@ TEST(DfaBuilderOutputTest, OrAB) {
     parser.Register("a|b", "or_token");
 
     CollectingDfaSetter setter;
-    DFABuilder builder(parser.root_node(), parser.node_id_to_token(), &setter);
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
+    builder.Build(&setter);
 
     // 验证字符类
     EXPECT_EQ(setter.char_class_count, 3);  // 'a', 'b', 其他
@@ -102,7 +103,8 @@ TEST(DfaBuilderOutputTest, StarA) {
     parser.Register("a*", "star_token");
 
     CollectingDfaSetter setter;
-    DFABuilder builder(parser.root_node(), parser.node_id_to_token(), &setter);
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
+    builder.Build(&setter);
 
     EXPECT_EQ(setter.char_class_count, 2);
     int class_a = setter.GetClassForChar('a');
@@ -121,7 +123,8 @@ TEST(DfaBuilderOutputTest, ConcatAB) {
     parser.Register("ab", "concat_token");
 
     CollectingDfaSetter setter;
-    DFABuilder builder(parser.root_node(), parser.node_id_to_token(), &setter);
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
+    builder.Build(&setter);
 
     EXPECT_EQ(setter.char_class_count, 3);
     int class_a = setter.GetClassForChar('a');
@@ -147,7 +150,8 @@ TEST(DfaBuilderOutputTest, StarAB) {
     parser.Register("(a|b)*", "star_ab_token");
 
     CollectingDfaSetter setter;
-    DFABuilder builder(parser.root_node(), parser.node_id_to_token(), &setter);
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
+    builder.Build(&setter);
 
     EXPECT_EQ(setter.char_class_count, 3);
     int class_a = setter.GetClassForChar('a');
@@ -169,7 +173,8 @@ TEST(DfaBuilderOutputTest, StarAOrStarB) {
     parser.Register("a*|b*", "star_or_token");
 
     CollectingDfaSetter setter;
-    DFABuilder builder(parser.root_node(), parser.node_id_to_token(), &setter);
+    DFABuilder builder(parser.root_node(), parser.node_id_to_token());
+    builder.Build(&setter);
 
     EXPECT_GE(setter.state_count, 2);
     EXPECT_EQ(setter.start_state, 0);

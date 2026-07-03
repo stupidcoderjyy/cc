@@ -8,21 +8,28 @@
 #include <array>
 
 #include "io/byte_reader.h"
+#include "io/file_byte_reader.h"
 #include "io/string_byte_reader.h"
 
 namespace common {
 
-CompilerInput::CompilerInput(std::unique_ptr<ByteReader> reader, std::string file_path,
-                             int buffer_size)
+CompilerInput::CompilerInput(
+        std::unique_ptr<ByteReader> reader, std::string file_path, int buffer_size)
     : BufferedInput(std::move(reader), buffer_size), file_path_(std::move(file_path)) {
     row_begin_.push_back(0);
     mark_data_.push_back(GetData());
 }
 
-std::unique_ptr<CompilerInput> CompilerInput::FromString(const std::string& utf8_data,
-                                                         const std::string& name, int buffer_size) {
+std::unique_ptr<CompilerInput> CompilerInput::FromString(
+        const std::string& utf8_data, const std::string& name, int buffer_size) {
     auto reader = std::make_unique<StringByteReader>(utf8_data);
     return std::make_unique<CompilerInput>(std::move(reader), name, buffer_size);
+}
+
+std::unique_ptr<CompilerInput> CompilerInput::FromFile(
+        const std::string& file_path, int buffer_size) {
+    auto reader = std::make_unique<FileByteReader>(file_path);
+    return std::make_unique<CompilerInput>(std::move(reader), file_path, buffer_size);
 }
 
 CompilerInput::~CompilerInput() {
@@ -167,11 +174,11 @@ CompileError CompilerInput::ErrorMarkToForward(const std::string& msg) {
 
 std::array<int, CompilerInput::kMarkLen> CompilerInput::GetData() const {
     return {
-        row_,
-        std::max(0, column_),
-        column_sizes_.empty() ? -1 : column_sizes_.back(),
-        row_begin_.empty() ? -1 : row_begin_.back(),
-        next_,
+            row_,
+            std::max(0, column_),
+            column_sizes_.empty() ? -1 : column_sizes_.back(),
+            row_begin_.empty() ? -1 : row_begin_.back(),
+            next_,
     };
 }
 

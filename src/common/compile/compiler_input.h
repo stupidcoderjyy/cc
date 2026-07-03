@@ -18,12 +18,17 @@ namespace common {
 class CompilerInput : public BufferedInput {
 public:
     // 构造函数：接受一个 ByteReader 和文件路径（可选）
-    CompilerInput(std::unique_ptr<ByteReader> reader, std::string file_path,
-                  int buffer_size = kDefaultBufferSize);
+    CompilerInput(std::unique_ptr<ByteReader> reader,
+            std::string file_path,
+            int buffer_size = kDefaultBufferSize);
 
     static std::unique_ptr<CompilerInput> FromString(const std::string& utf8_data,
-                                                     const std::string& name = "internal string",
-                                                     int buffer_size = kDefaultBufferSize);
+            const std::string& name = "internal string",
+            int buffer_size = kDefaultBufferSize);
+
+    static std::unique_ptr<CompilerInput> FromFile(
+            const std::string& file_path, int buffer_size = kDefaultBufferSize);
+
     ~CompilerInput() override;
 
     void Mark() override;

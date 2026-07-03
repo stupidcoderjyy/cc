@@ -11,13 +11,17 @@
 #include "lex/dfa_setter.h"
 #include "lex/nfa_regex_parser.h"
 
-namespace cc {
+namespace cc::test {
 
 // Token types for word-level tokens
-constexpr int kTokenNumber = 256;
-constexpr int kTokenAlpha = 257;
-constexpr int kTokenAlnum = 258;
-constexpr int kTokenString = 259;
+constexpr int kTokenId = 256;
+constexpr int kTokenString = 257;
+constexpr int kTokenTerminal = 258;
+constexpr int kTokenProdMark = 259;
+constexpr int kTokenSymbMark = 260;
+constexpr int kTokenTokenBegin = 261;
+constexpr int kTokenSyntaxBegin = 262;
+constexpr int kTokenBlockEnd = 263;
 
 using common::CompilerInput;
 using common::Lexer;
@@ -28,35 +32,68 @@ using common::TokenMatchResult;
 using common::TokenSingle;
 using common::TokenSupplier;
 
-// Custom token: number literal
-struct TokenNumber : Token {
-    int val{};
-    int Type() override { return kTokenNumber; }
-    TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& ci) override {
-        val = std::stoi(lexeme);
-        return TokenMatchResult::kAccept;
-    }
-};
-
-// Custom token: alphanumeric identifier (with underscore)
-struct TokenAlnum : Token {
+// Token for 'id' rule: \a\w*
+struct TokenId : Token {
     std::string val;
-    int Type() override { return kTokenAlnum; }
-    TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& ci) override {
+    int Type() override { return kTokenId; }
+    TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& /*ci*/) override {
         val = lexeme;
         return TokenMatchResult::kAccept;
     }
 };
 
-// Custom token: double-quoted string
-struct TokenString : Token {
+// Token for 'string' rule: "[^"]*"
+struct TokenStringVal : Token {
     std::string val;
     int Type() override { return kTokenString; }
     TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& /*ci*/) override {
-        // Strip surrounding double quotes
+        // Strip quotes
         val = lexeme.substr(1, lexeme.size() - 2);
         return TokenMatchResult::kAccept;
     }
+};
+
+// Token for 'terminal' rule: @($\a+|\a+|~)|'(.|\\.)'
+struct TokenTerminal : Token {
+    std::string val;
+    int Type() override { return kTokenTerminal; }
+    TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& /*ci*/) override {
+        val = lexeme;
+        return TokenMatchResult::kAccept;
+    }
+};
+
+// Token for 'prod_mark' rule: %\d*[rRlL]?
+struct TokenProdMark : Token {
+    std::string val;
+    int Type() override { return kTokenProdMark; }
+    TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& /*ci*/) override {
+        val = lexeme;
+        return TokenMatchResult::kAccept;
+    }
+};
+
+// Token for 'symb_mark' rule: $\d*[rRlL]?
+struct TokenSymbMark : Token {
+    std::string val;
+    int Type() override { return kTokenSymbMark; }
+    TokenMatchResult OnMatched(const std::string& lexeme, CompilerInput& /*ci*/) override {
+        val = lexeme;
+        return TokenMatchResult::kAccept;
+    }
+};
+
+// Keyword tokens
+struct TokenTokenBegin : Token {
+    int Type() override { return kTokenTokenBegin; }
+};
+
+struct TokenSyntaxBegin : Token {
+    int Type() override { return kTokenSyntaxBegin; }
+};
+
+struct TokenBlockEnd : Token {
+    int Type() override { return kTokenBlockEnd; }
 };
 
 class TestDataSupplier : public LexerDataSupplier, public DFASetter {
@@ -82,28 +119,16 @@ public:
         char_to_class_.resize(kMaxChars, 0);
     }
     void SetStartState(int id) override { start_state_ = id; }
-    void SetCharToClass(int ch, int class_id) override {
-        char_to_class_[ch] = class_id;
-        std::cout << std::format("char_to_class_['{}'] = {}; \n", static_cast<char>(ch), class_id);
-    }
+    void SetCharToClass(int ch, int class_id) override { char_to_class_[ch] = class_id; }
     void SetStateInfo(int state, bool accepted, const std::string& token) override {
         accepted_[state] = accepted;
         if (accepted) {
             token_suppliers_[state] = MakeSupplier(token);
         }
-        std::cout << std::format("accepted_[{}] = {} \n", state, accepted);
     }
-    void SetGoto(int start, int input, int target) override {
-        goto_[start][input] = target;
-        std::cout << std::format("goto_[{}][{}] = {}; \n", start, input, target);
-    }
+    void SetGoto(int start, int input, int target) override { goto_[start][input] = target; }
 
-    void Finish() override {
-        std::cout << std::format("char_class_count_ = {}; \n", char_class_count_);
-        std::cout << std::format("states_count_ = {}; \n", states_count_);
-        std::cout << std::format("start_state_ = {}; \n", start_state_);
-        std::cout.flush();
-    }
+    void Finish() override { std::cout.flush(); }
 
 private:
     int char_class_count_{};
@@ -115,10 +140,14 @@ private:
     std::vector<TokenSupplier> token_suppliers_;
 
     static TokenSupplier MakeSupplier(const std::string& token) {
-        if (token == "number") return [] { return std::make_unique<TokenNumber>(); };
-        if (token == "alnum") return [] { return std::make_unique<TokenAlnum>(); };
-        if (token == "string") return [] { return std::make_unique<TokenString>(); };
-        if (token == "single") return [] { return std::make_unique<TokenSingle>(); };
+        if (token == "id") return [] { return std::make_unique<TokenId>(); };
+        if (token == "string") return [] { return std::make_unique<TokenStringVal>(); };
+        if (token == "terminal") return [] { return std::make_unique<TokenTerminal>(); };
+        if (token == "prod_mark") return [] { return std::make_unique<TokenProdMark>(); };
+        if (token == "symb_mark") return [] { return std::make_unique<TokenSymbMark>(); };
+        if (token == "token_begin") return [] { return std::make_unique<TokenTokenBegin>(); };
+        if (token == "syntax_begin") return [] { return std::make_unique<TokenSyntaxBegin>(); };
+        if (token == "block_end") return [] { return std::make_unique<TokenBlockEnd>(); };
         if (token == "eof") return [] { return std::make_unique<TokenEof>(); };
         return nullptr;
     }
@@ -130,17 +159,21 @@ class LexerTest : public testing::Test {
 protected:
     void SetUp() override {
         // Register regex patterns
-        parser_.Register(R"([0-9]+)", "number");
-        parser_.Register(R"([a-zA-Z_][a-zA-Z0-9_]*)", "alnum");
-        parser_.Register(R"("[^"]*")", "string");
-
-        // Register single-character operators
-        parser_.RegisterSingles(
-            {'+', '-', '*', '/', '=', '<', '>', '!', '(', ')', '{', '}', '[', ']', ';', ',', '.'});
+        parser_.Register(R"(\a\w*)", "id");
+        parser_.Register(R"("([^"\\]|\\")*")", "string");
+        parser_.Register(R"(%%TOKEN)", "token_begin");
+        parser_.Register(R"(%%SYNTAX)", "syntax_begin");
+        parser_.Register(R"(%%)", "block_end");
+        parser_.Register(R"(@($\a+|\a+|~)|'(.|\\.)')", "terminal");
+        parser_.Register(R"(%\d*[rRlL]?)", "prod_mark");
+        parser_.Register(R"($\d*[rRlL]?)", "symb_mark");
 
         // Build DFA and populate lexer via custom setter
         TestDataSupplier tds;
-        DFABuilder builder(parser_, &tds);
+        DFABuilder builder(parser_);
+        builder.set_print_debug_info(true);
+        // builder.set_disable_dfa_minimize_(true);
+        builder.Build(&tds);
         lexer_ = std::make_unique<Lexer>(tds);
     }
 
@@ -153,135 +186,219 @@ protected:
     std::unique_ptr<Lexer> lexer_;
 };
 
-// ==================== Number Tests ====================
-
-TEST_F(LexerTest, NumberSingleDigit) {
-    auto tok = NextToken("2");
-    auto& num_token = tok->Cast<TokenNumber>();
-    ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), kTokenNumber);
-    EXPECT_EQ(num_token.val, 2);
-}
-
-TEST_F(LexerTest, NumberMultiDigit) {
-    auto tok = NextToken("12345");
-    auto& num_token = tok->Cast<TokenNumber>();
-    ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), kTokenNumber);
-    EXPECT_EQ(num_token.val, 12345);
-}
-
-// ==================== Alnum Tests ====================
-
-TEST_F(LexerTest, AlnumSimple) {
+TEST_F(LexerTest, IdSimple) {
     auto tok = NextToken("hello");
-    auto& num_token = tok->Cast<TokenAlnum>();
     ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), kTokenAlnum);
-    EXPECT_EQ(num_token.val, "hello");
+    auto& id = tok->Cast<TokenId>();
+    EXPECT_EQ(id.Type(), kTokenId);
+    EXPECT_EQ(id.val, "hello");
 }
 
-TEST_F(LexerTest, AlnumWithUnderscore) {
+TEST_F(LexerTest, IdWithUnderscore) {
     auto tok = NextToken("hello_world");
-    auto& num_token = tok->Cast<TokenAlnum>();
     ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), kTokenAlnum);
-    EXPECT_EQ(num_token.val, "hello_world");
+    auto& id = tok->Cast<TokenId>();
+    EXPECT_EQ(id.Type(), kTokenId);
+    EXPECT_EQ(id.val, "hello_world");
 }
 
-TEST_F(LexerTest, AlnumWithDigits) {
-    auto tok = NextToken("var123");
-    auto& num_token = tok->Cast<TokenAlnum>();
+TEST_F(LexerTest, IdStartingWithLetter) {
+    auto tok = NextToken("a1");
     ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), kTokenAlnum);
-    EXPECT_EQ(num_token.val, "var123");
+    auto& id = tok->Cast<TokenId>();
+    EXPECT_EQ(id.Type(), kTokenId);
+    EXPECT_EQ(id.val, "a1");
+}
+
+TEST_F(LexerTest, IdWithDigits) {
+    auto tok = NextToken("var123");
+    ASSERT_NE(tok, nullptr);
+    auto& id = tok->Cast<TokenId>();
+    EXPECT_EQ(id.Type(), kTokenId);
+    EXPECT_EQ(id.val, "var123");
 }
 
 // ==================== String Tests ====================
 
 TEST_F(LexerTest, StringEmpty) {
     auto tok = NextToken(R"("")");
-    auto& num_token = tok->Cast<TokenString>();
     ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), kTokenString);
-    EXPECT_EQ(num_token.val, "");
+    auto& str = tok->Cast<TokenStringVal>();
+    EXPECT_EQ(str.Type(), kTokenString);
+    EXPECT_EQ(str.val, "");
 }
 
 TEST_F(LexerTest, StringWithContent) {
     auto tok = NextToken(R"("abc def")");
-    auto& num_token = tok->Cast<TokenString>();
     ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), kTokenString);
-    EXPECT_EQ(num_token.val, "abc def");
+    auto& str = tok->Cast<TokenStringVal>();
+    EXPECT_EQ(str.Type(), kTokenString);
+    EXPECT_EQ(str.val, "abc def");
 }
 
-// ==================== Single Character Tests ====================
-
-TEST_F(LexerTest, SinglePlus) {
-    char ch = '+';
-    auto tok = NextToken(std::string(1, ch));
-    auto& num_token = tok->Cast<TokenSingle>();
+TEST_F(LexerTest, StringWithEscapedQuote) {
+    auto tok = NextToken(R"("a\"b")");
     ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), ch);
-    EXPECT_EQ(num_token.ch, ch);
+    auto& str = tok->Cast<TokenStringVal>();
+    EXPECT_EQ(str.Type(), kTokenString);
+    EXPECT_EQ(str.val, R"(a\"b)");
 }
 
-TEST_F(LexerTest, SingleMinus) {
-    char ch = '-';
-    auto tok = NextToken(std::string(1, ch));
-    auto& num_token = tok->Cast<TokenSingle>();
+// ==================== Keyword Tests ====================
+
+TEST_F(LexerTest, TokenBegin) {
+    auto tok = NextToken("%%TOKEN");
     ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), ch);
-    EXPECT_EQ(num_token.ch, ch);
+    EXPECT_EQ(tok->Type(), kTokenTokenBegin);
 }
 
-TEST_F(LexerTest, SingleStar) {
-    char ch = '*';
-    auto tok = NextToken(std::string(1, ch));
-    auto& num_token = tok->Cast<TokenSingle>();
+TEST_F(LexerTest, SyntaxBegin) {
+    auto tok = NextToken("%%SYNTAX");
     ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), ch);
-    EXPECT_EQ(num_token.ch, ch);
+    EXPECT_EQ(tok->Type(), kTokenSyntaxBegin);
 }
 
-TEST_F(LexerTest, SingleSlash) {
-    char ch = '/';
-    auto tok = NextToken(std::string(1, ch));
-    auto& num_token = tok->Cast<TokenSingle>();
+TEST_F(LexerTest, BlockEnd) {
+    auto tok = NextToken("%%");
     ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), ch);
-    EXPECT_EQ(num_token.ch, ch);
+    EXPECT_EQ(tok->Type(), kTokenBlockEnd);
 }
 
-TEST_F(LexerTest, SingleEquals) {
-    char ch = '=';
-    auto tok = NextToken(std::string(1, ch));
-    auto& num_token = tok->Cast<TokenSingle>();
+// ==================== Terminal Tests ====================
+
+TEST_F(LexerTest, TerminalAtSimple) {
+    auto tok = NextToken("@a");
     ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token.Type(), ch);
-    EXPECT_EQ(num_token.ch, ch);
+    auto& term = tok->Cast<TokenTerminal>();
+    EXPECT_EQ(term.Type(), kTokenTerminal);
+    EXPECT_EQ(term.val, "@a");
 }
 
-TEST_F(LexerTest, SingleParentheses) {
-    char ch = '(';
-    auto tok = NextToken(std::string(1, ch));
-    auto* num_token = &tok->Cast<TokenSingle>();
+TEST_F(LexerTest, TerminalAtDollar) {
+    auto tok = NextToken("@$abc");
     ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token->Type(), ch);
-    EXPECT_EQ(num_token->ch, ch);
-
-    ch = ')';
-    tok = NextToken(std::string(1, ch));
-    num_token = &tok->Cast<TokenSingle>();
-    ASSERT_NE(tok, nullptr);
-    EXPECT_EQ(num_token->Type(), ch);
-    EXPECT_EQ(num_token->ch, ch);
+    auto& term = tok->Cast<TokenTerminal>();
+    EXPECT_EQ(term.Type(), kTokenTerminal);
+    EXPECT_EQ(term.val, "@$abc");
 }
 
-// ==================== Edge Case Tests ====================
+TEST_F(LexerTest, TerminalAtTilde) {
+    auto tok = NextToken("@~");
+    ASSERT_NE(tok, nullptr);
+    auto& term = tok->Cast<TokenTerminal>();
+    EXPECT_EQ(term.Type(), kTokenTerminal);
+    EXPECT_EQ(term.val, "@~");
+}
+
+TEST_F(LexerTest, TerminalSingleChar) {
+    auto tok = NextToken("'a'");
+    ASSERT_NE(tok, nullptr);
+    auto& term = tok->Cast<TokenTerminal>();
+    EXPECT_EQ(term.Type(), kTokenTerminal);
+    EXPECT_EQ(term.val, "'a'");
+}
+
+TEST_F(LexerTest, TerminalSingleEscaped) {
+    auto tok = NextToken("'\\n'");
+    ASSERT_NE(tok, nullptr);
+    auto& term = tok->Cast<TokenTerminal>();
+    EXPECT_EQ(term.Type(), kTokenTerminal);
+    EXPECT_EQ(term.val, "'\\n'");
+}
+
+// ==================== Prod Mark Tests ====================
+
+TEST_F(LexerTest, ProdMarkSimple) {
+    auto tok = NextToken("%12L");
+    ASSERT_NE(tok, nullptr);
+    auto& pm = tok->Cast<TokenProdMark>();
+    EXPECT_EQ(pm.Type(), kTokenProdMark);
+    EXPECT_EQ(pm.val, "%12L");
+}
+
+TEST_F(LexerTest, ProdMarkNoDigits) {
+    auto tok = NextToken("%R");
+    ASSERT_NE(tok, nullptr);
+    auto& pm = tok->Cast<TokenProdMark>();
+    EXPECT_EQ(pm.Type(), kTokenProdMark);
+    EXPECT_EQ(pm.val, "%R");
+}
+
+TEST_F(LexerTest, ProdMarkOnlyPercent) {
+    // According to rule %\d*[rRlL]?, the '?' makes the letter optional, so "%" is valid.
+    auto tok = NextToken("%");
+    ASSERT_NE(tok, nullptr);
+    auto& pm = tok->Cast<TokenProdMark>();
+    EXPECT_EQ(pm.Type(), kTokenProdMark);
+    EXPECT_EQ(pm.val, "%");
+}
+
+// ==================== Symb Mark Tests ====================
+
+TEST_F(LexerTest, SymbMarkSimple) {
+    auto tok = NextToken("$12L");
+    ASSERT_NE(tok, nullptr);
+    auto& sm = tok->Cast<TokenSymbMark>();
+    EXPECT_EQ(sm.Type(), kTokenSymbMark);
+    EXPECT_EQ(sm.val, "$12L");
+}
+
+TEST_F(LexerTest, SymbMarkNoDigits) {
+    auto tok = NextToken("$R");
+    ASSERT_NE(tok, nullptr);
+    auto& sm = tok->Cast<TokenSymbMark>();
+    EXPECT_EQ(sm.Type(), kTokenSymbMark);
+    EXPECT_EQ(sm.val, "$R");
+}
+
+TEST_F(LexerTest, SymbMarkOnlyDollar) {
+    auto tok = NextToken("$");
+    ASSERT_NE(tok, nullptr);
+    auto& sm = tok->Cast<TokenSymbMark>();
+    EXPECT_EQ(sm.Type(), kTokenSymbMark);
+    EXPECT_EQ(sm.val, "$");
+}
+
+// ==================== Edge Cases ====================
 TEST_F(LexerTest, UnknownCharProducesNull) {
     auto tok = NextToken("^");
     EXPECT_EQ(tok, nullptr);
 }
 
-}  // namespace cc
+TEST_F(LexerTest, UnclosedString) {
+    // According to the regex, an unclosed string will not match the string rule,
+    // but may be recognized as something else? Actually it will fail.
+    auto tok = NextToken("\"abc");
+    EXPECT_EQ(tok, nullptr);
+}
+
+TEST_F(LexerTest, LongInput) {
+    std::string input = "%%TOKEN %%SYNTAX %% hello \"world\" @a %123L $456R";
+    // Expect sequence of tokens; just test the first few.
+    auto ci = CompilerInput::FromString(input);
+    auto tok1 = lexer_->NextToken(*ci);
+    ASSERT_NE(tok1, nullptr);
+    EXPECT_EQ(tok1->Type(), kTokenTokenBegin);
+
+    auto tok2 = lexer_->NextToken(*ci);
+    ASSERT_NE(tok2, nullptr);
+    EXPECT_EQ(tok2->Type(), kTokenSyntaxBegin);
+
+    auto tok3 = lexer_->NextToken(*ci);
+    ASSERT_NE(tok3, nullptr);
+    EXPECT_EQ(tok3->Type(), kTokenBlockEnd);
+
+    auto tok4 = lexer_->NextToken(*ci);
+    ASSERT_NE(tok4, nullptr);
+    auto& id = tok4->Cast<TokenId>();
+    EXPECT_EQ(id.Type(), kTokenId);
+    EXPECT_EQ(id.val, "hello");
+
+    auto tok5 = lexer_->NextToken(*ci);
+    ASSERT_NE(tok5, nullptr);
+    auto& str = tok5->Cast<TokenStringVal>();
+    EXPECT_EQ(str.Type(), kTokenString);
+    EXPECT_EQ(str.val, "world");
+}
+
+}  // namespace cc::test

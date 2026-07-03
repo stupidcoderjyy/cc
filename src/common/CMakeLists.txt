@@ -5,6 +5,7 @@ add_library(${TARGET} STATIC
         io/buffered_input.cpp
         io/string_byte_reader.cpp
         io/string_input.cpp
+        io/file_byte_reader.cpp
         compile/compiler_input.cpp
         compile/compile_error.cpp
         compile/lexer.cpp

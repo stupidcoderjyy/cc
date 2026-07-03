@@ -1,0 +1,27 @@
+%%TOKEN
+
+number: "\d+(\.\d+)?";
+
+%%
+
+%%SYNTAX
+
+expr : expr '+' $1L term
+     | expr '-' $1L term
+     | term
+     ;
+
+term : term '*' $2L factor
+     | term '/' $2L factor
+     | factor
+     ;
+
+factor : primary '^' $3R factor %2R
+       | primary
+       ;
+
+primary : '(' expr ')'
+        | '-' $4R primary
+        | @number
+        ;
+%%

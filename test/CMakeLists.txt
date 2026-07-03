@@ -5,6 +5,7 @@ set(TEST_SRC_COMMON
         common/compile/lexer_test.cpp
         common/compile/parser_test.cpp
         common/compile/scriptloader_dump_test.cpp
+        common/compile/script_loader_end_to_end_test.cpp
 )
 set(TEST_SRC_LEX
         lex/dfa_builder_build_char_class_map_test.cpp
@@ -41,7 +42,17 @@ foreach(TARGET IN LISTS TARGETS)
             cc::core
             cc::common
             GTest::gtest_main
+            stdc++exp
     )
     gtest_discover_tests(${TARGET})
     add_dependencies(${TARGET} format)
 endforeach()
+
+# 复制测试脚本
+add_custom_target(copy_examples
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${PROJECT_SOURCE_DIR}/examples
+        ${CMAKE_CURRENT_BINARY_DIR}/examples
+        COMMENT "Copying language txt files to test binary"
+)
+add_dependencies(cc_test_common copy_examples)

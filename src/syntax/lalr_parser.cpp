@@ -241,7 +241,7 @@ void LALRBuilder::BuildCanonicalCollection() {
         std::set<int> symbols;
         for (const auto& [prod_id, dot_pos] : lr0_states_[cur].items) {
             if (const auto& prod = syntax_->productions()[prod_id];
-                dot_pos < static_cast<int>(prod.body.size())) {
+                    dot_pos < static_cast<int>(prod.body.size())) {
                 symbols.insert(symbol_to_id_.at(prod.body[dot_pos]));
             }
         }
@@ -424,7 +424,7 @@ void LALRBuilder::PropagateLookaheads() {
 
                 // 1. 沿 GOTO 传播：目标状态中对应项继承 LA
                 if (auto tit = lr0_states_[s].transitions.find(next_id);
-                    tit != lr0_states_[s].transitions.end()) {
+                        tit != lr0_states_[s].transitions.end()) {
                     int target = tit->second;
                     Item advanced{item.prod_id, item.dot_pos + 1};
                     for (const auto& sym : la) {
@@ -490,7 +490,7 @@ void LALRBuilder::BuildParsingTable() {
     for (int lr = 0; lr < lr0_states_.size(); ++lr) {
         for (const auto& [item, f_symbols] : lr0_lookaheads_[lr]) {
             if (const auto& prod = syntax_->productions()[item.prod_id];
-                item.dot_pos != prod.body.size()) {
+                    item.dot_pos != prod.body.size()) {
                 continue;
             }
             for (const auto& f_symbol : f_symbols) {
@@ -510,7 +510,7 @@ void LALRBuilder::EmitActionShiftAndGoto() {
     for (int lalr_s = 0; lalr_s < num_lalr; ++lalr_s) {
         for (const auto& [sym_id, target] : lr0_states_[lalr_s].transitions) {
             if (const auto& sym = id_to_symbol_[sym_id];
-                sym.type == SymbolType::kTerminal || sym.type == SymbolType::kEof) {
+                    sym.type == SymbolType::kTerminal || sym.type == SymbolType::kEof) {
                 action_[lalr_s][sym_id] = {ActionType::kShift, target};
                 if (print_debug_info_) {
                     PrintShift(sym, target);
@@ -605,7 +605,7 @@ void LALRBuilder::EmitActionReduce(int lr_state, const Item& item, const Symbol&
         }
         default: {
             throw std::runtime_error(std::format("Unexpected action type in state {}, action: {}",
-                                                 lr_state, static_cast<int>(cell.type)));
+                    lr_state, static_cast<int>(cell.type)));
         }
     }
 }
@@ -724,8 +724,8 @@ std::string LALRBuilder::ItemString(int state, const Item& item) const {
     return result;
 }
 
-void LALRBuilder::WarnConflictSR(int state, const Item& item, const Symbol& forward,
-                                 const Action& action) const {
+void LALRBuilder::WarnConflictSR(
+        int state, const Item& item, const Symbol& forward, const Action& action) const {
     Begin(0, BLACK, action.type == ActionType::kUndefined ? BG_BLACK : BG_YELLOW, std::cerr);
     std::cerr << std::left << "shift-reduce conflict:";
     std::cerr << "prod:" << std::setw(30) << ItemString(state, item);
@@ -735,8 +735,10 @@ void LALRBuilder::WarnConflictSR(int state, const Item& item, const Symbol& forw
     std::cerr << std::endl;
 }
 
-void LALRBuilder::WarnConflictRR(const Production& pre, const Production& cur,
-                                 const Symbol& forward, const Action& action) const {
+void LALRBuilder::WarnConflictRR(const Production& pre,
+        const Production& cur,
+        const Symbol& forward,
+        const Action& action) const {
     Begin(0, BLACK, action.type == ActionType::kUndefined ? BG_BLACK : BG_YELLOW, std::cerr);
     std::cerr << std::left << "reduce-reduce conflict:    ";
     std::cerr << "prod1:" << std::setw(20)

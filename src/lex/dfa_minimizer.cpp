@@ -66,7 +66,7 @@ DFA DFAMinimizer::Minimize() {
         int rep = blocks_[b][0];
         const auto& old_state = dfa_->states[rep];
         auto new_state =
-            std::make_unique<DFAState>(b, NFAGroup(), old_state->is_accepted, old_state->token);
+                std::make_unique<DFAState>(b, NFAGroup(), old_state->is_accepted, old_state->token);
         new_state->class_id_to_next.assign(char_class_count_, -1);
         min_dfa.states.push_back(std::move(new_state));
     }
@@ -141,8 +141,8 @@ void DFAMinimizer::BuildIncoming() {
     }
 }
 
-bool DFAMinimizer::SplitBlock(int Y, const std::vector<int>& intersect,
-                              const std::vector<int>& diff) {
+bool DFAMinimizer::SplitBlock(
+        int Y, const std::vector<int>& intersect, const std::vector<int>& diff) {
     // 两者均非空
     if (intersect.empty() || diff.empty()) return false;
 
@@ -173,22 +173,26 @@ bool DFAMinimizer::SplitBlock(int Y, const std::vector<int>& intersect,
 void DFAMinimizer::UpdateIncomingAfterSplit(int old_block, int new_block1, int new_block2) {
     // new_block1 和 new_block2 分别为分裂后的两个块 ID（这里 old_block 和 new_block）
     for (int c = 0; c < char_class_count_; ++c) {
-        auto& sources = incoming_[c][old_block];
+        auto& sources = incoming_[c][old_block];  // 引用指向旧块的入边列表
         if (sources.empty()) continue;
 
-        // 清空新块可能残留的数据（安全起见）
+        // 复制一份，避免在遍历中修改原容器导致迭代器失效
+        std::vector<int> sources_copy = sources;
+
+        // 清空旧列表（之后重新分配）
+        sources.clear();
+        // 同时清空新块列表（确保干净）
         incoming_[c][new_block1].clear();
         incoming_[c][new_block2].clear();
 
-        // 重新分配每个源状态
-        for (int s : sources) {
-            if (int t = dfa_->states[s]->class_id_to_next[c]; t != -1) {
-                int target_block = block_of_state_[t];
-                // target_block 必定是 new_block1 或 new_block2
-                incoming_[c][target_block].push_back(s);
-            }
+        // 遍历所有源状态，重新计算其目标块
+        for (int s : sources_copy) {
+            int t = dfa_->states[s]->class_id_to_next[c];
+            if (t == -1) continue;  // 未定义转移忽略（已补全死状态则不会发生）
+            int target_block = block_of_state_[t];
+            // 目标块必定是 new_block1 或 new_block2（但安全起见，直接添加到对应块）
+            incoming_[c][target_block].push_back(s);
         }
-        sources.clear();  // 清空旧块列表
     }
 }
 

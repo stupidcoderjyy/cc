@@ -19,10 +19,10 @@ public:
     static constexpr int kDefaultBufferSize = 2048;
     static constexpr int kMaxBufferSize = 4096;
     // 接受一个外部 ByteReader，并可选缓冲区大小
-    explicit BufferedInput(std::unique_ptr<ByteReader> reader,
-                           int buffer_size = kDefaultBufferSize);
-    static std::unique_ptr<BufferedInput> FromString(const std::string& utf8_data,
-                                                     int buffer_size = kDefaultBufferSize);
+    explicit BufferedInput(
+            std::unique_ptr<ByteReader> reader, int buffer_size = kDefaultBufferSize);
+    static std::unique_ptr<BufferedInput> FromString(
+            const std::string& utf8_data, int buffer_size = kDefaultBufferSize);
 
     ~BufferedInput() override = default;
 

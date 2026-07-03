@@ -15,7 +15,7 @@ namespace cc {
 template <size_t N>
 struct BitsetHash {
     static_assert(N % 64 == 0,
-                  "BitsetHash requires N to be a multiple of 64 for optimal 64-bit block hashing.");
+            "BitsetHash requires N to be a multiple of 64 for optimal 64-bit block hashing.");
     static_assert(N > 0, "BitsetHash requires N to be greater than 0.");
 
     static constexpr bool kHasPaddingBits = sizeof(std::bitset<N>) != N / 8;

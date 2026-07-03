@@ -11,9 +11,7 @@
 #include <sstream>
 #include <utility>
 
-#include "cc_constants.h"
 #include "compile/compiler_input.h"
-#include "compile/lexer.h"
 #include "lex/dfa_builder.h"
 #include "lex/dfa_setter.h"
 #include "lex/nfa_regex_parser.h"
@@ -84,8 +82,8 @@ public:
         state_items_[stateId] = items;
     }
 
-    void SetStateLookaheads(int stateId,
-                            const std::map<Item, std::set<Symbol, std::less<>>>& la) override {
+    void SetStateLookaheads(
+            int stateId, const std::map<Item, std::set<Symbol, std::less<>>>& la) override {
         if (static_cast<int>(state_lookahead_.size()) <= stateId)
             state_lookahead_.resize(stateId + 1);
         state_lookahead_[stateId] = la;
@@ -192,13 +190,13 @@ protected:
         auto& p = parser_;
 
         p.Register(R"(\a\w*)", "id");
-        p.Register(R"(\"[^\"]*\")", "string");
+        p.Register(R"("[^\"]*")", "string");
         p.Register(R"(%%TOKEN)", "token_begin");
         p.Register(R"(%%SYNTAX)", "syntax_begin");
         p.Register(R"(%%)", "block_end");
         p.Register(R"(@($\a+|\a+|~)|'(.|\\.)')", "terminal");
-        p.Register(R"(%\d*[rRlL])", "prod_mark");
-        p.Register(R"($\d*[rRlL])", "symb_mark");
+        p.Register(R"(%\d*[rRlL]?)", "prod_mark");
+        p.Register(R"($\d*[rRlL]?)", "symb_mark");
 
         parser_.RegisterSingles({':', ';', '|'});
     }
@@ -211,8 +209,9 @@ protected:
         using I = std::initializer_list<Symbol>;
 
         // script : @token_begin tokens @block_end @syntax_begin syntax @block_end
-        syntax_.AddProduction(nt("script"), I{t("token_begin"), nt("tokens"), t("block_end"),
-                                              t("syntax_begin"), nt("syntax"), t("block_end")});
+        syntax_.AddProduction(
+                nt("script"), I{t("token_begin"), nt("tokens"), t("block_end"), t("syntax_begin"),
+                                      nt("syntax"), t("block_end")});
         // tokens : token | tokens token
         syntax_.AddProduction(nt("tokens"), I{nt("token")});
         syntax_.AddProduction(nt("tokens"), I{nt("tokens"), nt("token")});
@@ -261,7 +260,9 @@ TEST_F(ScriptLoaderDumpTest, DumpTokenDFA) {
     std::cout << "\n========== TOKEN DFA DATA ==========\n";
 
     DumpDFASetter dfa_dump;
-    DFABuilder builder(parser_, &dfa_dump);
+    DFABuilder builder(parser_);
+    builder.set_print_debug_info(true);
+    builder.Build(&dfa_dump);
 
     std::cout << "Char classes: " << dfa_dump.class_count << "\n";
     std::cout << "DFA states: " << dfa_dump.state_count << "\n";
@@ -278,7 +279,7 @@ TEST_F(ScriptLoaderDumpTest, DumpTokenDFA) {
 
     std::cout << "\nChar → class (selected):\n";
     for (auto c : {'\000', ' ', '\n', '\t', 'a', 'z', 'A', 'Z', '0', '9', '_', ':', ';', '|', '%',
-                   '$', '"', '\''}) {
+                 '$', '"', '\''}) {
         int cls = 0;
         if (c >= 0 && c < static_cast<int>(dfa_dump.char_to_class.size()))
             cls = dfa_dump.char_to_class[c];
@@ -294,8 +295,8 @@ TEST_F(ScriptLoaderDumpTest, DumpGrammarLALR) {
 
     ConsoleLanguageSetter setter(&syntax_);
     LALRBuilder builder(syntax_);
-    builder.set_print_conflict_info(true);
-    builder.set_print_debug_info(true);
+    // builder.set_print_conflict_info(true);
+    // builder.set_print_debug_info(true);
     builder.Build(&setter);
 
     // FIRST sets

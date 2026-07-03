@@ -1,0 +1,1 @@
+﻿%%TOKEN %%SYNTAX %% a a1 a_ "d a" @a @$a @~ '\n' 'a' %12L %2 %R $12L $2 $R

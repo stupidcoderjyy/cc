@@ -36,7 +36,7 @@ void Parser::Parse(Lexer& lexer, CompilerInput& ci) {
     while (true) {
         int s = states.back();
         int order = token ? actions_[s][token_to_symbol_[token->Type()]] : 0;
-        int type = order >> 16;
+        int type = order & 0xF0000;
         int target = order & 0xFFFF;
         switch (type) {
             default: {

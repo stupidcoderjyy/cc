@@ -1,4 +1,4 @@
-add_subdirectory(common)
+﻿add_subdirectory(common)
 
 set(TARGET cc_core)
 
@@ -12,6 +12,7 @@ add_library(${TARGET} STATIC
         util/bitset_hash.h
         syntax/syntax.cpp
         syntax/lalr_parser.cpp
+        generate/script_parser_data.cpp
 )
 target_link_libraries(${TARGET} PRIVATE
         cc::common

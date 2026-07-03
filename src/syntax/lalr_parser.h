@@ -116,10 +116,12 @@ private:
     std::pair<int, Associativity> LookaheadProperties(int symbolId) const;
 
     std::string ItemString(int state, const Item& item) const;
-    void WarnConflictSR(int state, const Item& item, const Symbol& forward,
-                        const Action& action) const;
-    void WarnConflictRR(const Production& pre, const Production& cur, const Symbol& forward,
-                        const Action& action) const;
+    void WarnConflictSR(
+            int state, const Item& item, const Symbol& forward, const Action& action) const;
+    void WarnConflictRR(const Production& pre,
+            const Production& cur,
+            const Symbol& forward,
+            const Action& action) const;
     void PrintGroupInfo(int groupId, const std::set<Item>& items) const;
     static void PrintReduce(const Symbol& forward, const Production& prod);
     static void PrintGoto(const Symbol& input, int nextState);
