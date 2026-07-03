@@ -39,6 +39,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, SinglePredicate) {
     NFARegexParser parser;
     parser.Register("[0-9]", "");
     DFABuilder builder(parser);
+    builder.Build();
 
     EXPECT_EQ(builder.class_count(), 2);
     auto pred = [](int c) { return c >= '0' && c <= '9'; };
@@ -52,6 +53,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, TwoDistinctPredicates) {
     parser.Register("[0-9]", "");
     parser.Register("[a-zA-Z]", "");
     DFABuilder builder(parser);
+    builder.Build();
 
     EXPECT_EQ(builder.class_count(), 3);  // digit, alpha, other
     auto digit = [](int c) { return c >= '0' && c <= '9'; };
@@ -66,6 +68,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, SamePredicates) {
     parser.Register("[0-9]", "");
     parser.Register("[0-9]", "");
     DFABuilder builder(parser);
+    builder.Build();
 
     EXPECT_EQ(builder.class_count(), 2);
     auto digit1 = [](int c) { return c >= '0' && c <= '9'; };
@@ -81,6 +84,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, ThreeDistinctPredicates) {
     parser.Register("[a-zA-Z]", "");
     parser.Register("[ \t\n]", "");
     DFABuilder builder(parser);
+    builder.Build();
 
     EXPECT_EQ(builder.class_count(), 4);
     auto digit = [](int c) { return c >= '0' && c <= '9'; };
@@ -114,6 +118,7 @@ TEST_F(DfaBuilderBuildCharClassMapTest, MultiplePredicates) {
     parser.RegisterSingles(
             {'+', '-', '*', '/', '=', '<', '>', '!', '(', ')', '{', '}', '[', ']', ';', ',', '.'});
     DFABuilder builder(parser);
+    builder.Build();
 
     // 6 个互不等价的谓词产生 5 种字符签名
     EXPECT_EQ(builder.class_count(), 5);

@@ -41,6 +41,11 @@ struct DFAState {
 struct DFA {
     std::vector<std::unique_ptr<DFAState>> states;
     int start_state = -1;
+    DFA() = default;
+    DFA(const DFA&) = delete;
+    DFA(DFA&&) = default;
+    DFA& operator=(const DFA& other) = delete;
+    DFA& operator=(DFA&& other) = default;
 };
 
 class NFANode;
@@ -63,6 +68,9 @@ public:
     // getter
     const std::vector<int>& char_to_class() const { return char_to_class_; }
     int class_count() const { return class_count_; }
+    DFA& dfa() { return dfa_; }
+
+    // setter
     void set_print_debug_info(bool enable) { print_debug_info_ = enable; }
     void set_print_conflict_info(bool enable) { print_conflict_info_ = enable; }
     void set_disable_dfa_minimize_(bool disable) { disable_dfa_minimize_ = disable; }

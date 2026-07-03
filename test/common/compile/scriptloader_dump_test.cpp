@@ -187,16 +187,14 @@ protected:
     }
 
     void RegisterTokens() {
-        auto& p = parser_;
-
-        p.Register(R"(\a\w*)", "id");
-        p.Register(R"("[^\"]*")", "string");
-        p.Register(R"(%%TOKEN)", "token_begin");
-        p.Register(R"(%%SYNTAX)", "syntax_begin");
-        p.Register(R"(%%)", "block_end");
-        p.Register(R"(@($\a+|\a+|~)|'(.|\\.)')", "terminal");
-        p.Register(R"(%\d*[rRlL]?)", "prod_mark");
-        p.Register(R"($\d*[rRlL]?)", "symb_mark");
+        parser_.Register(R"(\a\w*)", "id");
+        parser_.Register(R"("([^"\\]|\\")*")", "string");
+        parser_.Register(R"(%%TOKEN)", "token_begin");
+        parser_.Register(R"(%%SYNTAX)", "syntax_begin");
+        parser_.Register(R"(%%)", "block_end");
+        parser_.Register(R"(@($\a+|\a+|~)|'(.|\\.)')", "terminal");
+        parser_.Register(R"(%\d*[rRlL]?)", "prod_mark");
+        parser_.Register(R"($\d*[rRlL]?)", "symb_mark");
 
         parser_.RegisterSingles({':', ';', '|'});
     }

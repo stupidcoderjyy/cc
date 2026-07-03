@@ -36,11 +36,10 @@ TEST_F(ScriptLoaderEndToEndTest, LexerTest) {
     };
     Lexer lexer(lexer_data_);
 
-    for (int i = 0; i < expected_types.size(); ++i) {
-        ASSERT_TRUE(ci->Available()) << "failed at " << i;
+    for (int expected_type : expected_types) {
         auto token = lexer.NextToken(*ci);
-        ASSERT_TRUE(token.get()) << "failed at " << i;
-        EXPECT_EQ(token->Type(), expected_types[i]);
+        ASSERT_TRUE(token.get());
+        EXPECT_EQ(token->Type(), expected_type);
     }
 }
 

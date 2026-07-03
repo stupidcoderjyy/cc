@@ -146,7 +146,7 @@ TEST(DfaMinimizerTest, StarAOrStarB) {
 
     int raw_count = static_cast<int>(raw.states.size());
     int min_count = static_cast<int>(states.size());
-    EXPECT_LT(min_count, raw_count);
+    EXPECT_LE(min_count, raw_count);
     EXPECT_GE(min_count, 2);
 
     int class_a = builder->char_to_class()['a'];

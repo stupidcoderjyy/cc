@@ -38,197 +38,222 @@ int TokenBlockEnd::Type() {
 // ==================== Lexer Data ====================
 
 int ScriptLexerData::CharClassCount() {
-    return 22;
+    return 21;
 }
+
 int ScriptLexerData::StatesCount() {
-    return 19;
+    return 29;
 }
+
 int ScriptLexerData::StartState() {
-    return 16;
+    return 12;
 }
 
 void ScriptLexerData::InitAccepted(std::vector<bool>& vec) {
-    vec.assign(19, false);
-    vec[1] = true;   // string
-    vec[2] = true;   // syntax_begin
-    vec[3] = true;   // token_begin
-    vec[4] = true;   // prod_mark
-    vec[5] = true;   // block_end
-    vec[6] = true;   // symb_mark
-    vec[7] = true;   // terminal
-    vec[8] = true;   // single
-    vec[9] = true;   // id
-    vec[17] = true;  // terminal
+    vec.assign(29, false);
+    vec[1] = true;
+    vec[2] = true;
+    vec[3] = true;
+    vec[4] = true;
+    vec[5] = true;
+    vec[6] = true;
+    vec[7] = true;
+    vec[8] = true;
+    vec[13] = true;
+    vec[15] = true;
+    vec[16] = true;
+    vec[21] = true;
 }
 
 void ScriptLexerData::InitGoto(std::vector<std::vector<int>>& vec) {
-    vec.assign(19, std::vector<int>(22, -1));
+    const int states = 29;
+    const int classes = 21;  // 实际字符类0-20，共21个
+    vec.assign(states, std::vector<int>(classes, -1));
 
-    // State 0
-    vec[0][0] = 0;
-    vec[0][1] = 1;
-    for (int c = 2; c < 22; ++c)
-        vec[0][c] = 0;
+    // 三元组：{当前状态, 输入类, 目标状态}
+    struct Trans {
+        int s, c, t;
+    };
+    std::vector<Trans> trans = {// 状态0
+            {0, 0, 0}, {0, 1, 1}, {0, 2, 0}, {0, 3, 0}, {0, 4, 0}, {0, 5, 0}, {0, 6, 0}, {0, 7, 0},
+            {0, 8, 0}, {0, 9, 0}, {0, 10, 0}, {0, 11, 0}, {0, 12, 0}, {0, 13, 0}, {0, 14, 0},
+            {0, 15, 0}, {0, 16, 0}, {0, 17, 0}, {0, 18, 14}, {0, 19, 0}, {0, 20, 0},
 
-    // State 1: no outgoing (accept)
-    // State 2: no outgoing (accept)
-    // State 3: no outgoing (accept)
-    // State 4: no outgoing (accept)
+            // 状态4
+            {4, 14, 26}, {4, 15, 25},
 
-    // State 5
-    vec[5][15] = 18;
-    vec[5][16] = 18;
+            // 状态5
+            {5, 5, 5}, {5, 7, 5}, {5, 8, 5}, {5, 9, 5}, {5, 10, 5}, {5, 11, 5}, {5, 12, 5},
+            {5, 13, 5}, {5, 14, 5}, {5, 15, 5}, {5, 16, 5}, {5, 17, 5}, {5, 19, 5},
 
-    // State 6: no outgoing (accept)
+            // 状态6
+            {6, 3, 4}, {6, 5, 13}, {6, 11, 21},
 
-    // State 7
-    vec[7][4] = 17;
+            // 状态7
+            {7, 4, 15},
 
-    // State 8
-    for (int c : {5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20})
-        vec[8][c] = 8;
+            // 状态8
+            {8, 5, 8}, {8, 11, 16},
 
-    // State 9: no outgoing (accept)
+            // 状态9
+            {9, 16, 2},
 
-    // State 10
-    vec[10][17] = 2;
+            // 状态10
+            {10, 0, 20}, {10, 1, 20}, {10, 2, 20}, {10, 3, 20}, {10, 4, 20}, {10, 5, 20},
+            {10, 6, 20}, {10, 7, 20}, {10, 8, 20}, {10, 9, 20}, {10, 10, 20}, {10, 11, 20},
+            {10, 12, 20}, {10, 13, 20}, {10, 14, 20}, {10, 15, 20}, {10, 16, 20}, {10, 17, 20},
+            {10, 18, 19}, {10, 19, 20}, {10, 20, 20},
 
-    // State 11
-    for (int c = 0; c < 19; ++c)
-        vec[11][c] = 18;
-    for (int c = 20; c < 22; ++c)
-        vec[11][c] = 18;
-    vec[11][19] = 11;
+            // 状态11
+            {11, 12, 3},
 
-    // State 12
-    vec[12][13] = 3;
+            // 状态12
+            {12, 1, 0}, {12, 2, 8}, {12, 3, 6}, {12, 4, 10}, {12, 6, 27}, {12, 7, 5}, {12, 8, 5},
+            {12, 9, 5}, {12, 10, 5}, {12, 11, 5}, {12, 12, 5}, {12, 13, 5}, {12, 14, 5},
+            {12, 15, 5}, {12, 16, 5}, {12, 17, 5},
 
-    // State 13
-    vec[13][3] = 5;
-    vec[13][5] = 15;
-    vec[13][12] = 4;
+            // 状态13
+            {13, 5, 13}, {13, 11, 21},
 
-    // State 14
-    vec[14][5] = 14;
-    vec[14][12] = 6;
+            // 状态14
+            {14, 1, 0},
 
-    // State 15
-    vec[15][5] = 15;
-    vec[15][12] = 4;
+            // 状态15
+            {15, 7, 15}, {15, 8, 15}, {15, 9, 15}, {15, 10, 15}, {15, 11, 15}, {15, 12, 15},
+            {15, 13, 15}, {15, 14, 15}, {15, 15, 15}, {15, 16, 15}, {15, 17, 15},
 
-    // State 16 (start)
-    vec[16][1] = 0;
-    vec[16][2] = 14;
-    vec[16][3] = 13;
-    vec[16][4] = 11;
-    vec[16][6] = 9;
-    vec[16][7] = 18;
-    vec[16][8] = 8;
-    for (int c = 9; c < 19; ++c)
-        vec[16][c] = 8;
-    // 类0,5,19,20,21 无转移，保持 -1
+            // 状态17
+            {17, 7, 9},
 
-    // State 17
-    for (int c : {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18})
-        vec[17][c] = 17;
+            // 状态18
+            {18, 9, 11},
 
-    // State 18
-    vec[18][2] = 18;
-    for (int c : {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18})
-        vec[18][c] = 17;
-    vec[18][21] = 17;
+            // 状态19
+            {19, 0, 20}, {19, 1, 20}, {19, 2, 20}, {19, 3, 20}, {19, 4, 7}, {19, 5, 20},
+            {19, 6, 20}, {19, 7, 20}, {19, 8, 20}, {19, 9, 20}, {19, 10, 20}, {19, 11, 20},
+            {19, 12, 20}, {19, 13, 20}, {19, 14, 20}, {19, 15, 20}, {19, 16, 20}, {19, 17, 20},
+            {19, 18, 20}, {19, 19, 20}, {19, 20, 20},
+
+            // 状态20
+            {20, 4, 15},
+
+            // 状态22
+            {22, 15, 17},
+
+            // 状态23
+            {23, 10, 18},
+
+            // 状态24
+            {24, 12, 22},
+
+            // 状态25
+            {25, 13, 23},
+
+            // 状态26
+            {26, 17, 24},
+
+            // 状态27
+            {27, 2, 28}, {27, 7, 15}, {27, 8, 15}, {27, 9, 15}, {27, 10, 15}, {27, 11, 15},
+            {27, 12, 15}, {27, 13, 15}, {27, 14, 15}, {27, 15, 15}, {27, 16, 15}, {27, 17, 15},
+            {27, 20, 15},
+
+            // 状态28
+            {28, 7, 15}, {28, 8, 15}, {28, 9, 15}, {28, 10, 15}, {28, 11, 15}, {28, 12, 15},
+            {28, 13, 15}, {28, 14, 15}, {28, 15, 15}, {28, 16, 15}, {28, 17, 15}};
+
+    for (const auto& t : trans) {
+        vec[t.s][t.c] = t.t;
+    }
 }
 
 void ScriptLexerData::InitCharToClass(std::vector<int>& vec) {
     vec.assign(128, 0);  // 所有字符默认类0
 
-    // 类1：双引号 "
+    // 类1：双引号
     vec['"'] = 1;
 
-    // 类2：美元符 $
+    // 类2：美元符
     vec['$'] = 2;
 
-    // 类3：百分号 %
+    // 类3：百分号
     vec['%'] = 3;
 
-    // 类4：单引号 '
+    // 类4：单引号
     vec['\''] = 4;
 
-    // 类5：数字 0~8
+    // 类5：数字0~8
     for (char c = '0'; c <= '8'; ++c)
         vec[c] = 5;
 
-    // 类6：冒号、分号、竖线
-    vec[':'] = 6;
-    vec[';'] = 6;
-    vec['|'] = 6;
+    // 类6：@
+    vec['@'] = 6;
 
-    // 类7：@
-    vec['@'] = 7;
+    // 类7：A
+    vec['A'] = 7;
 
-    // 类8：A
-    vec['A'] = 8;
-
-    // 类9：B C D F G H I J M P Q U V W 及小写 (不含 l, r, z)
+    // 类8：特定字母
     for (char c : "BCDFGHIJMPQUVW")
-        vec[c] = 9;
+        vec[c] = 8;
     for (char c : "abcdefghijkmnopqstuvwxy")
-        vec[c] = 9;  // 注意 l,r,z 不在内
+        vec[c] =
+                8;  // 排除 l, r, z? 注意这里包含了a,b,c,d,e,f,g,h,i,j,k,m,n,o,p,q,s,t,u,v,w,x,y (无l,r,z)
 
-    // 类10：E
-    vec['E'] = 10;
+    // 类9：E
+    vec['E'] = 9;
 
-    // 类11：K
-    vec['K'] = 11;
+    // 类10：K
+    vec['K'] = 10;
 
-    // 类12：L R l r
-    vec['L'] = 12;
-    vec['R'] = 12;
-    vec['l'] = 12;
-    vec['r'] = 12;
+    // 类11：L R l r
+    vec['L'] = 11;
+    vec['R'] = 11;
+    vec['l'] = 11;
+    vec['r'] = 11;
 
-    // 类13：N
-    vec['N'] = 13;
+    // 类12：N
+    vec['N'] = 12;
 
-    // 类14：O
-    vec['O'] = 14;
+    // 类13：O
+    vec['O'] = 13;
 
-    // 类15：S
-    vec['S'] = 15;
+    // 类14：S
+    vec['S'] = 14;
 
-    // 类16：T
-    vec['T'] = 16;
+    // 类15：T
+    vec['T'] = 15;
 
-    // 类17：X
-    vec['X'] = 17;
+    // 类16：X
+    vec['X'] = 16;
 
-    // 类18：Y
-    vec['Y'] = 18;
+    // 类17：Y
+    vec['Y'] = 17;
 
-    // 类19：反斜杠
-    vec['\\'] = 19;
+    // 类18：反斜杠
+    vec['\\'] = 18;
 
-    // 类20：下划线
-    vec['_'] = 20;
+    // 类19：下划线
+    vec['_'] = 19;
 
-    // 类21：波浪号
-    vec['~'] = 21;
+    // 类20：波浪号
+    vec['~'] = 20;
 
     // 其余字符（空格、数字9、大写Z、小写z、各种标点）默认为0，无需修改
 }
 
 void ScriptLexerData::InitTokenSuppliers(std::vector<common::TokenSupplier>& vec) {
-    vec.resize(19);
+    vec.resize(30);
     vec[1] = [] { return std::make_unique<TokenStringVal>(); };
     vec[2] = [] { return std::make_unique<TokenSyntaxBegin>(); };
     vec[3] = [] { return std::make_unique<TokenTokenBegin>(); };
-    vec[4] = [] { return std::make_unique<TokenProdMark>(); };
-    vec[5] = [] { return std::make_unique<TokenBlockEnd>(); };
-    vec[6] = [] { return std::make_unique<TokenSymbMark>(); };
+    vec[4] = [] { return std::make_unique<TokenBlockEnd>(); };
+    vec[5] = [] { return std::make_unique<TokenId>(); };
+    vec[6] = [] { return std::make_unique<TokenProdMark>(); };
     vec[7] = [] { return std::make_unique<TokenTerminal>(); };
-    vec[8] = [] { return std::make_unique<common::TokenSingle>(); };
-    vec[9] = [] { return std::make_unique<TokenId>(); };
-    vec[17] = [] { return std::make_unique<TokenTerminal>(); };
+    vec[8] = [] { return std::make_unique<TokenSymbMark>(); };
+    vec[13] = [] { return std::make_unique<TokenProdMark>(); };
+    vec[15] = [] { return std::make_unique<TokenTerminal>(); };
+    vec[16] = [] { return std::make_unique<TokenSymbMark>(); };
+    vec[21] = [] { return std::make_unique<TokenProdMark>(); };
 }
 
 // ==================== Parser Data ====================
