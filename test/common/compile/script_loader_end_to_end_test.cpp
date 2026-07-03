@@ -26,7 +26,7 @@ protected:
 // Parse caculator.txt (empty token/syntax blocks) using scriptloader grammar
 TEST_F(ScriptLoaderEndToEndTest, LexerTest) {
     auto ci = CompilerInput::FromString(
-            R"(%%TOKEN %%SYNTAX %% a a1 a_ "d a" @a @$a @~ '\n' 'a' %12L %2 %R $12L $2 $R)");
+            R"(%%TOKEN %%SYNTAX %% a a1 a_ "d \\ \"a" @a @$a @~ '\n' 'a' %12L %2 %R $12L $2 $R)");
     std::vector expected_types{
             kTokenTokenBegin, kTokenSyntaxBegin, kTokenBlockEnd, kTokenId, kTokenId, kTokenId,
             kTokenString, kTokenTerminal, kTokenTerminal, kTokenTerminal, kTokenTerminal,

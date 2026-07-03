@@ -6,7 +6,6 @@
 #define CC_LALR_PARSER_H
 #include <format>
 #include <map>
-#include <memory>
 #include <optional>
 #include <set>
 #include <vector>

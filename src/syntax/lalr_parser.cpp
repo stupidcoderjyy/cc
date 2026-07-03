@@ -61,13 +61,13 @@ void LALRBuilder::InitSymbols() {
         return symbol_to_id_[s];
     };
 
+    add_sym(syntax_->end_symbol());
     for (const auto& s : syntax_->terminals() | std::views::values) {
         add_sym(s);
     }
     for (const auto& s : syntax_->non_terminals() | std::views::values) {
         add_sym(s);
     }
-    add_sym(syntax_->end_symbol());
 }
 
 void LALRBuilder::BuildProductionIndex() {
@@ -639,7 +639,7 @@ void LALRBuilder::OutputData(LanguageSetter& setter) const {
             }
         }
         for (const auto& [sym, target] : goto_[s]) {
-            setter.SetGoto(s, sym, target);
+            setter.SetGoto(s, sym - static_cast<int>(terms.size()) - 1, target);
         }
     }
 

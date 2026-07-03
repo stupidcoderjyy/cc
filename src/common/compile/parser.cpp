@@ -50,7 +50,7 @@ void Parser::Parse(Lexer& lexer, CompilerInput& ci) {
                 properties.pop_back();
                 try {
                     auto& p = productions_[0];
-                    if (auto& f = reduce_actions_[p.head.id]) {
+                    if (auto& f = reduce_actions_[p.id]) {
                         f(body);
                     }
                 } catch (std::exception& err) {
@@ -83,7 +83,7 @@ void Parser::Parse(Lexer& lexer, CompilerInput& ci) {
                     }
                 }
                 try {
-                    if (auto& f = reduce_actions_[p.head.id]) {
+                    if (auto& f = reduce_actions_[p.id]) {
                         f(body);
                     }
                 } catch (std::exception& err) {

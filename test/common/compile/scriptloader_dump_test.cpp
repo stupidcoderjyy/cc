@@ -25,11 +25,11 @@ namespace {
 std::string action_name(int type) {
     switch (type) {
         case 1:
-            return "ACCEPT";
+            return "kActionShift";
         case 2:
-            return "SHIFT";
+            return "kActionReduce";
         case 3:
-            return "REDUCE";
+            return "kActionAccept";
         default:
             return "???";
     }
@@ -90,12 +90,12 @@ public:
     }
 
     void SetAction(int stateId, int symbolId, int type, int target) override {
-        std::cout << "  ACTION[" << stateId << "][" << symbolId << "] = " << action_name(type)
-                  << " " << target << "\n";
+        // std::cout << "  vec[" << stateId << "][" << symbolId << "] = " << action_name(type) << " | "
+        //           << target << ";\n";
     }
 
     void SetGoto(int stateId, int symbolId, int target) override {
-        std::cout << "  GOTO[" << stateId << "][" << symbolId << "] = " << target << "\n";
+        std::cout << "  vec[" << stateId << "][" << symbolId << "] = " << target << ";\n";
     }
 
     void SetStartState(int /*id*/) override {}
@@ -188,14 +188,13 @@ protected:
 
     void RegisterTokens() {
         parser_.Register(R"(\a\w*)", "id");
-        parser_.Register(R"("([^"\\]|\\")*")", "string");
+        parser_.Register(R"("([^"\\]|\\"?)*")", "string");
         parser_.Register(R"(%%TOKEN)", "token_begin");
         parser_.Register(R"(%%SYNTAX)", "syntax_begin");
         parser_.Register(R"(%%)", "block_end");
         parser_.Register(R"(@($\a+|\a+|~)|'(.|\\.)')", "terminal");
         parser_.Register(R"(%\d*[rRlL]?)", "prod_mark");
         parser_.Register(R"($\d*[rRlL]?)", "symb_mark");
-
         parser_.RegisterSingles({':', ';', '|'});
     }
 

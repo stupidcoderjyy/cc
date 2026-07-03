@@ -309,7 +309,7 @@ void DFABuilder::OutputData(DFASetter& setter) const {
 
         // ===== 新增：打印状态信息 =====
         if (print_debug_info_) {
-            PrintState(state.id, state.is_accepted);
+            PrintState(state);
         }
 
         // 遍历每个字符类，输出转移
@@ -384,13 +384,17 @@ void DFABuilder::PrintDFANodes() const {
     std::cout << std::endl;
 }
 
-void DFABuilder::PrintState(int state, bool accept) {
-    if (accept) {
+void DFABuilder::PrintState(const DFAState& state) {
+    if (state.is_accepted) {
         PrintHighlightBlue("ACCEPTED", std::cout);
     } else {
         PrintHighlightYellow("NON ACCEPTED", std::cout);
     }
-    std::cout << " " << state << std::endl;
+    std::cout << " " << state.id;
+    if (state.is_accepted) {
+        std::cout << " (" << state.token << ")";
+    }
+    std::cout << std::endl;
 }
 
 void DFABuilder::PrintGoto(int input_class, int target, bool target_accept) {

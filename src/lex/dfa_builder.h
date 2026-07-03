@@ -101,7 +101,8 @@ private:
     void PrintNFAToClass() const;
     void PrintCharToClass() const;
     void PrintDFANodes() const;
-    static void PrintState(int state, bool accept);
+
+    static void PrintState(const DFAState& state);
     static void PrintGoto(int src_state, int target, bool target_accept);
     static void WarnTokenMatchConflict(DFAState& state, std::vector<std::string>& tokens);
 };

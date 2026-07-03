@@ -149,6 +149,7 @@ private:
         if (token == "syntax_begin") return [] { return std::make_unique<TokenSyntaxBegin>(); };
         if (token == "block_end") return [] { return std::make_unique<TokenBlockEnd>(); };
         if (token == "eof") return [] { return std::make_unique<TokenEof>(); };
+        if (token == "single") return [] { return std::make_unique<TokenSingle>(); };
         return nullptr;
     }
 };
@@ -160,13 +161,14 @@ protected:
     void SetUp() override {
         // Register regex patterns
         parser_.Register(R"(\a\w*)", "id");
-        parser_.Register(R"("([^"\\]|\\")*")", "string");
+        parser_.Register(R"("([^"\\]|\\"?)*")", "string");
         parser_.Register(R"(%%TOKEN)", "token_begin");
         parser_.Register(R"(%%SYNTAX)", "syntax_begin");
         parser_.Register(R"(%%)", "block_end");
         parser_.Register(R"(@($\a+|\a+|~)|'(.|\\.)')", "terminal");
         parser_.Register(R"(%\d*[rRlL]?)", "prod_mark");
         parser_.Register(R"($\d*[rRlL]?)", "symb_mark");
+        parser_.RegisterSingles({':', ';', '|'});
 
         // Build DFA and populate lexer via custom setter
         TestDataSupplier tds;
@@ -237,11 +239,11 @@ TEST_F(LexerTest, StringWithContent) {
 }
 
 TEST_F(LexerTest, StringWithEscapedQuote) {
-    auto tok = NextToken(R"("a\"b")");
+    auto tok = NextToken(R"("a\"b\")");
     ASSERT_NE(tok, nullptr);
     auto& str = tok->Cast<TokenStringVal>();
     EXPECT_EQ(str.Type(), kTokenString);
-    EXPECT_EQ(str.val, R"(a\"b)");
+    EXPECT_EQ(str.val, R"(a\"b\)");
 }
 
 // ==================== Keyword Tests ====================
@@ -400,5 +402,21 @@ TEST_F(LexerTest, LongInput) {
     EXPECT_EQ(str.Type(), kTokenString);
     EXPECT_EQ(str.val, "world");
 }
+// ==================== Singles ====================
 
+TEST_F(LexerTest, Singles) {
+    std::string input = " : ; | ";
+    auto ci = CompilerInput::FromString(input);
+    auto tok1 = lexer_->NextToken(*ci);
+    ASSERT_NE(tok1, nullptr);
+    EXPECT_EQ(tok1->Type(), ':');
+
+    auto tok2 = lexer_->NextToken(*ci);
+    ASSERT_NE(tok2, nullptr);
+    EXPECT_EQ(tok2->Type(), ';');
+
+    auto tok3 = lexer_->NextToken(*ci);
+    ASSERT_NE(tok3, nullptr);
+    EXPECT_EQ(tok3->Type(), '|');
+}
 }  // namespace cc::test
