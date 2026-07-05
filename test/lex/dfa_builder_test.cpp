@@ -24,19 +24,21 @@ public:
 
     CollectingDfaSetter() { char_to_class.resize(kMaxChars); }
 
-    void SetCharClassCount(int count) override { char_class_count = count; }
+    void DFASetCharClassCount(int count) override { char_class_count = count; }
 
-    void SetCharToClass(int ch, int class_id) override { char_to_class[ch] = class_id; }
+    void DFASetCharToClass(int ch, int class_id) override { char_to_class[ch] = class_id; }
 
-    void SetDfaStatesCount(int count) override { state_count = count; }
+    void DFASetStatesCount(int count) override { state_count = count; }
 
-    void SetStartState(int id) override { start_state = id; }
+    void DFASetStartState(int id) override { start_state = id; }
 
-    void SetStateInfo(int stateId, bool isAccepted, const std::string& token) override {
+    void DFASetStateInfo(int stateId, bool isAccepted, const std::string& token) override {
         state_info[stateId] = {isAccepted, token};
     }
 
-    void SetGoto(int start, int input, int target) override { transitions[start][input] = target; }
+    void DFASetGoto(int start, int input, int target) override {
+        transitions[start][input] = target;
+    }
 
     // 辅助断言方法
     void ExpectStateCount(int expected) const { EXPECT_EQ(state_count, expected); }

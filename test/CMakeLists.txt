@@ -6,6 +6,7 @@ set(TEST_SRC_COMMON
         common/compile/parser_test.cpp
         common/compile/scriptloader_dump_test.cpp
         common/compile/script_loader_end_to_end_test.cpp
+        common/io/stream_byte_reader_test.cpp
 )
 set(TEST_SRC_LEX
         lex/dfa_builder_build_char_class_map_test.cpp
@@ -26,33 +27,40 @@ set(TEST_SRC_SYNTAX
         syntax/lalr_parser_parsing_table_test.cpp
         syntax/lalr_parser_parse_test.cpp
 )
+set(TEST_SRC_GENERATE
+        generate/generator_test.cpp
+)
 
 add_executable(cc_test_common ${TEST_SRC_COMMON})
 add_executable(cc_test_lex ${TEST_SRC_LEX})
 add_executable(cc_test_syntax ${TEST_SRC_SYNTAX})
+add_executable(cc_test_generate ${TEST_SRC_GENERATE})
 add_executable(cc_test_all
         ${TEST_SRC_COMMON}
         ${TEST_SRC_LEX}
         ${TEST_SRC_SYNTAX}
+        ${TEST_SRC_GENERATE}
 )
 
-set(TARGETS cc_test_common cc_test_lex cc_test_syntax cc_test_all)
+set(TARGETS cc_test_common cc_test_lex cc_test_syntax cc_test_generate cc_test_all)
 foreach(TARGET IN LISTS TARGETS)
     target_link_libraries(${TARGET} PRIVATE
-            cc::core
-            cc::common
+            jyy::cc_core
+            jyy::common
             GTest::gtest_main
             stdc++exp
     )
     gtest_discover_tests(${TARGET})
-    add_dependencies(${TARGET} format)
+    add_dependencies(${TARGET} format prepare_test_files)
 endforeach()
 
-# 复制测试脚本
-add_custom_target(copy_examples
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${PROJECT_SOURCE_DIR}/examples
-        ${CMAKE_CURRENT_BINARY_DIR}/examples
-        COMMENT "Copying language txt files to test binary"
+set(TEMPLATE_DIR ${CMAKE_CURRENT_BINARY_DIR}/templates)
+set(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/lang.txt)
+
+add_custom_target(prepare_test_files
+        COMMAND ${CMAKE_COMMAND} -E remove ${TEMPLATE_DIR}/parser_data.h.txt ${TEMPLATE_DIR}/parser_data.h.txt ${SCRIPT}
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/templates/parser_data.h.txt ${TEMPLATE_DIR}/parser_data.h.txt
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/templates/parser_data.cpp.txt ${TEMPLATE_DIR}/parser_data.cpp.txt
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/examples/calculator/lang.txt ${SCRIPT}
+        COMMENT "Copying files to ${TEMPLATE_DIR}"
 )
-add_dependencies(cc_test_common copy_examples)

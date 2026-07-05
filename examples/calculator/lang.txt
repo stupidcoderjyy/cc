@@ -1,0 +1,19 @@
+%%TOKEN
+
+number: "\d+(\.\d+)?";
+
+%%
+
+%%SYNTAX
+
+expr : expr '+' $1L expr %1L
+     | expr '-' $1L expr %1L
+     | expr '*' $2L expr %2L
+     | expr '/' $2L expr %2L
+     | expr '^' $3L expr %3L
+     | '-' expr %5
+     | '(' expr ')'
+     | @number
+     ;
+
+%%

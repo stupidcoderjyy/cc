@@ -1,0 +1,6 @@
+{
+  "script": "C:/Users/PC/CLionProjects/cc/lang.txt",
+  "out": "C:/Users/PC/CLionProjects/cc/examples/calculator/gen",
+  "namespace": "cal::gen",
+  "name": "calculator"
+}

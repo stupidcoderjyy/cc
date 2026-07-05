@@ -16,7 +16,7 @@ set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE
         stdc++exp
-        cc::core
+        jyy::cc_core
 )
 
 # 代码格式化
@@ -35,13 +35,11 @@ if(CLANG_FORMAT)
             "${PROJECT_SOURCE_DIR}/src/*.h"
             "${PROJECT_SOURCE_DIR}/test/*.cpp"
     )
-
     add_custom_target(format
             COMMAND ${CLANG_FORMAT} -i -style=file ${ALL_SOURCE_FILES}
             COMMENT "Running clang-format on all source files."
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     )
-
     add_dependencies(${PROJECT_NAME} format)
 
     message(STATUS "clang-format found at ${CLANG_FORMAT}")
@@ -50,5 +48,19 @@ else()
 endif()
 
 add_subdirectory(thirdparty)
-add_subdirectory(src)
+add_subdirectory(templates)
+add_subdirectory(cc)
+add_subdirectory(common)
 add_subdirectory(test)
+add_subdirectory(examples)
+
+install(FILES
+        ${CMAKE_SOURCE_DIR}/templates/parser_data.cpp.txt
+        ${CMAKE_SOURCE_DIR}/templates/parser_data.h.txt
+        DESTINATION bin
+)
+
+# 2. 安装可执行文件到 bin/ 子目录
+install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION bin
+)

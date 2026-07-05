@@ -1,0 +1,6 @@
+{
+  "script": "@SCRIPT@",
+  "out": "@OUT@",
+  "namespace": "@NAMESPACE@",
+  "name": "@NAME@"
+}

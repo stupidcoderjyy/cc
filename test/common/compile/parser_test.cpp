@@ -24,7 +24,6 @@ using common::Parser;
 using common::ParserDataSupplier;
 using common::Production;
 using common::Property;
-using common::PropertySupplier;
 using common::Symbol;
 using common::TokenEof;
 using common::TokenSingle;
@@ -44,24 +43,24 @@ public:
         vec = std::move(token_suppliers_);
     }
 
-    void SetCharClassCount(int count) override { char_class_count_ = count; }
-    void SetDfaStatesCount(int count) override {
+    void DFASetCharClassCount(int count) override { char_class_count_ = count; }
+    void DFASetStatesCount(int count) override {
         states_count_ = count;
         accepted_.resize(states_count_, false);
         goto_.assign(states_count_, std::vector(char_class_count_, -1));
         token_suppliers_.resize(states_count_);
         char_to_class_.resize(kMaxChars, 0);
     }
-    void SetStartState(int id) override { start_state_ = id; }
-    void SetCharToClass(int ch, int class_id) override { char_to_class_[ch] = class_id; }
-    void SetStateInfo(int state, bool accepted, const std::string& token) override {
+    void DFASetStartState(int id) override { start_state_ = id; }
+    void DFASetCharToClass(int ch, int class_id) override { char_to_class_[ch] = class_id; }
+    void DFASetStateInfo(int state, bool accepted, const std::string& token) override {
         accepted_[state] = accepted;
         if (accepted) {
             token_suppliers_[state] = MakeSupplier(token);
         }
     }
-    void SetGoto(int start, int input, int target) override { goto_[start][input] = target; }
-    void Finish() override {}
+    void DFASetGoto(int start, int input, int target) override { goto_[start][input] = target; }
+    void DFAFinish() override {}
 
 private:
     int char_class_count_{};
@@ -119,12 +118,6 @@ public:
         vec.assign(128, 0);
         vec[0] = 0;    // $ → terminal symbol 0
         vec['a'] = 1;  // 'a' → terminal symbol 1
-    }
-
-    void InitPropertySuppliers(std::vector<PropertySupplier>& vec) override {
-        vec.resize(2);
-        vec[0] = [] { return std::make_unique<Property>(); };
-        vec[1] = [] { return std::make_unique<Property>(); };
     }
 
     void InitProductions(std::vector<Production>& prods) override {

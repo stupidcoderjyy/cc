@@ -41,7 +41,7 @@ class ConsoleLanguageSetter : public LanguageSetter {
 public:
     explicit ConsoleLanguageSetter(Syntax* s) : syntax_(s) {}
 
-    void SetProductions(const std::vector<Production>& prods) override {
+    void LALRSetProductions(const std::vector<Production>& prods) override {
         std::cout << "====== PRODUCTIONS ======\n";
         for (const auto& p : prods) {
             std::cout << "  " << p.id << ": " << p.head.name;
@@ -58,7 +58,9 @@ public:
         std::cout << std::endl;
     }
 
-    void SetTerminals(const std::vector<Symbol>& terms) override {
+    void LALRSetStatesCount(int count) override {}
+
+    void LALRSetTerminals(const std::vector<Symbol>& terms) override {
         std::cout << "====== TERMINALS ======\n";
         for (const auto& s : terms) {
             std::cout << "  " << s.name;
@@ -70,66 +72,23 @@ public:
         std::cout << std::endl;
     }
 
-    void SetNonTerminals(const std::vector<Symbol>& non_terms) override {
+    void LALRSetNonTerminals(const std::vector<Symbol>& non_terms) override {
         std::cout << "====== NON-TERMINALS ======\n";
         for (const auto& s : non_terms)
             std::cout << "  " << s.name << "\n";
         std::cout << std::endl;
     }
 
-    void SetLALRState(int stateId, const std::set<Item>& items) override {
-        if (static_cast<int>(state_items_.size()) <= stateId) state_items_.resize(stateId + 1);
-        state_items_[stateId] = items;
-    }
-
-    void SetStateLookaheads(
-            int stateId, const std::map<Item, std::set<Symbol, std::less<>>>& la) override {
-        if (static_cast<int>(state_lookahead_.size()) <= stateId)
-            state_lookahead_.resize(stateId + 1);
-        state_lookahead_[stateId] = la;
-    }
-
-    void SetAction(int stateId, int symbolId, int type, int target) override {
+    void LALRSetAction(int stateId, int symbolId, int type, int target) override {
         std::cout << "  vec[" << stateId << "][" << symbolId << "] = " << action_name(type) << " | "
                   << target << ";\n";
     }
 
-    void SetGoto(int stateId, int symbolId, int target) override {
+    void LALRSetGoto(int stateId, int symbolId, int target) override {
         // std::cout << "  vec[" << stateId << "][" << symbolId << "] = " << target << ";\n";
     }
 
-    void SetStartState(int /*id*/) override {}
-
-    void Finish() override {
-        std::cout << "\n====== LALR STATES (with lookaheads) ======\n";
-        for (size_t s = 0; s < state_items_.size(); ++s) {
-            std::cout << "State " << s << ":\n";
-            for (const auto& item : state_items_[s]) {
-                const auto& prod = syntax_->productions()[item.prod_id];
-                std::cout << "  [" << item.prod_id << "] " << prod.head.name << " ->";
-                for (int i = 0; i < static_cast<int>(prod.body.size()); ++i) {
-                    if (i == item.dot_pos) std::cout << " ·";
-                    std::cout << " " << prod.body[i].name;
-                }
-                if (item.dot_pos == static_cast<int>(prod.body.size())) std::cout << " ·";
-                if (s < state_lookahead_.size()) {
-                    auto lit = state_lookahead_[s].find(item);
-                    if (lit != state_lookahead_[s].end() && !lit->second.empty()) {
-                        std::cout << "   LA={";
-                        bool first = true;
-                        for (const auto& la : lit->second) {
-                            if (!first) std::cout << ", ";
-                            first = false;
-                            std::cout << la.name;
-                        }
-                        std::cout << "}";
-                    }
-                }
-                std::cout << "\n";
-            }
-        }
-        std::cout << std::flush;
-    }
+    void LALRFinish() override {}
 
 private:
     Syntax* syntax_;
@@ -149,32 +108,32 @@ public:
     std::vector<std::string> tokens;
     std::vector<std::map<int, int>> class_transitions;
 
-    void SetCharClassCount(int c) override { class_count = c; }
+    void DFASetCharClassCount(int c) override { class_count = c; }
 
-    void SetCharToClass(int ch, int class_id) override {
+    void DFASetCharToClass(int ch, int class_id) override {
         if (static_cast<size_t>(ch) >= char_to_class.size()) char_to_class.resize(ch + 1, 0);
         char_to_class[ch] = class_id;
     }
 
-    void SetDfaStatesCount(int n) override {
+    void DFASetStatesCount(int n) override {
         state_count = n;
         accepted.assign(n, false);
         tokens.resize(n);
         class_transitions.resize(n);
     }
 
-    void SetStartState(int id) override { start_state = id; }
+    void DFASetStartState(int id) override { start_state = id; }
 
-    auto SetStateInfo(int state, bool b, const std::string& token) -> void override {
+    auto DFASetStateInfo(int state, bool b, const std::string& token) -> void override {
         this->accepted[state] = b;
         if (b) tokens[state] = token;
     }
 
-    void SetGoto(int start, int input, int target) override {
+    void DFASetGoto(int start, int input, int target) override {
         class_transitions[start][input] = target;
     }
 
-    void Finish() override {}
+    void DFAFinish() override {}
 };
 
 // ==================== Test Fixture ====================

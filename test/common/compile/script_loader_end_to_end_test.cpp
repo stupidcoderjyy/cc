@@ -11,7 +11,7 @@
 #include "compile/parser.h"
 #include "generate/script_parser_data.h"
 
-namespace cc::generate {
+namespace cc::gen {
 
 using common::CompilerInput;
 using common::Lexer;
@@ -23,7 +23,7 @@ protected:
     ScriptParserData parser_data_;
 };
 
-// Parse caculator.txt (empty token/syntax blocks) using scriptloader grammar
+// Parse lang.txt (empty token/syntax blocks) using scriptloader grammar
 TEST_F(ScriptLoaderEndToEndTest, LexerTest) {
     auto ci = CompilerInput::FromString(
             R"(%%TOKEN %%SYNTAX %% a a1 a_ "d \\ \"a" @a @$a @~ '\n' 'a' %12L %2 %R $12L $2 $R)");
@@ -45,7 +45,7 @@ TEST_F(ScriptLoaderEndToEndTest, LexerTest) {
 
 // Parse scriptloader.txt using its own grammar
 TEST_F(ScriptLoaderEndToEndTest, ParseScriptLoaderTxt) {
-    auto ci = CompilerInput::FromFile("examples/caculator.txt");
+    auto ci = CompilerInput::FromFile("lang.txt");
 
     Lexer lexer(lexer_data_);
     Parser parser(parser_data_);
@@ -59,4 +59,4 @@ TEST_F(ScriptLoaderEndToEndTest, ParseScriptLoaderTxt) {
     SUCCEED();
 }
 
-}  // namespace cc::generate
+}  // namespace cc::gen
