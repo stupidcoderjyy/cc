@@ -21,9 +21,9 @@ configure_file(
 add_custom_target(generate_config
         COMMAND ${CMAKE_COMMAND} -E remove ${SCRIPT}
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/lang.txt ${SCRIPT}
-        COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cc ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cc.config.json --debug
+        COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/stupidcoder.cc ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cc.config.json --debug
         WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-        DEPENDS cc prepare_templates ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cc.config.json
+        DEPENDS stupidcoder.cc ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cc.config.json
         COMMENT "Preparing lang.txt and running cc generator"
 )
 

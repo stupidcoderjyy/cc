@@ -13,6 +13,7 @@
 #include "script_parser_data.h"
 #include "syntax/lalr_parser.h"
 #include "util/print_util.h"
+#include "embedded_templates.h"
 
 namespace cc::gen {
 
@@ -37,9 +38,9 @@ void Generator::Build(const std::string& script_file, const std::string& dest_di
         auto ci = CompilerInput::FromFile(script_file);
         parser.Parse(lexer, *ci);
         auto json = BuildJson();
-        RenderTemplate("templates/parser_data.h.txt", json,
+        RenderTemplate(embed::GetParserDataHeaderTemplate(), json,
                 std::format("{}/{}_parser_data.h", dest_dir, info_->parser_name));
-        RenderTemplate("templates/parser_data.cpp.txt", json,
+        RenderTemplate(embed::GetParserDataCppTemplate(), json,
                 std::format("{}/{}_parser_data.cpp", dest_dir, info_->parser_name));
     } catch (common::CompileError& e) {
         std::cerr << e.FormatErrorMessage() << std::endl;
@@ -137,7 +138,7 @@ void Generator::LALRSetGoto(int stateId, int symbolId, int target) {
 void Generator::LALRFinish() {}
 
 void Generator::RenderTemplate(
-        const std::string& template_file, const json& json, const std::string& dst_file) {
+        const std::string_view& file_str, const json& json, const std::string& dst_file) {
     // 1. 创建 Inja 环境
     inja::Environment env;
     using std::filesystem::create_directories;
@@ -145,11 +146,7 @@ void Generator::RenderTemplate(
     using std::filesystem::path;
     using std::filesystem::current_path;
 
-    // 2. 从模板文件读取并渲染，返回生成的字符串
-    if (!exists(template_file)) {
-        throw std::runtime_error(std::format("missing template file: {}/{}", current_path().string(), template_file));
-    }
-    std::string rendered = env.render_file(template_file, json);
+    std::string rendered = env.render(file_str, json);
 
     // 3. 确保输出目录存在
     if (path outDir = path(dst_file).parent_path(); !outDir.empty() && !exists(outDir)) {

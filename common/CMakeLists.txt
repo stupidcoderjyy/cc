@@ -1,4 +1,4 @@
-﻿set(TARGET cc_common)
+﻿set(TARGET stupidcoder.common)
 
 add_library(${TARGET}
         io/abstract_input.cpp

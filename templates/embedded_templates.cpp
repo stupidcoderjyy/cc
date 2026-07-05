@@ -1,4 +1,94 @@
 //
+// Created by PC on 2026/7/6.
+//
+
+#include "embedded_templates.h"
+
+namespace cc::embed {
+
+std::string_view GetParserDataHeaderTemplate() {
+    return R"(//
+// Generated Parser file by stupidcoder cc
+// Date: {{ date }}
+//
+
+#ifndef CC_{{ parser_name_upper }}_PARSER_DATA_H
+#define CC_{{ parser_name_upper }}_PARSER_DATA_H
+
+#include "compile/lexer.h"
+#include "compile/parser.h"
+
+namespace cc {
+
+struct DFASetter;
+struct LanguageSetter;
+
+}  // namespace cc
+
+namespace {{ s_namespace }} {
+
+// ==================== Token Types ====================
+
+## for item in lexer.tokens
+constexpr int kToken{{ item.name_camel }} = {{ item.type }};
+## endfor
+
+// ==================== Lexer Data ====================
+
+struct {{ parser_name_camel }}LexerData : common::LexerDataSupplier {
+    int CharClassCount() override;
+    int StatesCount() override;
+    int StartState() override;
+    void InitAccepted(std::vector<bool>& vec) override;
+    void InitGoto(std::vector<std::vector<int>>& vec) override;
+    void InitCharToClass(std::vector<int>& vec) override;
+    void InitTokenSuppliers(std::vector<common::TokenSupplier>& vec) override;
+};
+
+// ==================== Token Structs ====================
+
+using common::CompilerInput;
+using common::Token;
+using common::TokenMatchResult;
+using common::TokenSingle;
+
+{% for item in lexer.tokens %}struct Token{{ item.name_camel }} : Token {
+    int Type() override;
+};{% endfor %}
+
+// ==================== Property ====================
+
+using common::Property;
+using common::PropertyTerminal;
+
+// ==================== Parser Data ====================
+
+class {{ parser_name_camel }}ParserData : public common::ParserDataSupplier {
+public:
+    int TokenMappersCount() const override;
+    int NonTerminalSymbolsCount() const override;
+    int TerminalSymbolsCount() const override;
+    int StatesCount() const override;
+    int ProductionsCount() const override;
+    void InitReduceActions(std::vector<common::ReduceFunc>& vec) override;
+    void InitGoto(std::vector<std::vector<int>>& vec) override;
+    void InitActions(std::vector<std::vector<int>>& vec) override;
+    void InitTokenToSymbol(std::vector<int>& vec) override;
+    void InitProductions(std::vector<common::Production>& productions) override;
+
+protected:
+{% for item in parser.arr_productions %}    // {{ item.full_text }}
+    virtual void Reduce{{ item.head_camel_numbered }}(const std::vector<std::unique_ptr<Property>>& props);
+{% endfor -%}
+};
+
+}  // namespace {{ s_namespace }}
+
+#endif  //CC_{{ parser_name_upper }}_PARSER_DATA_H)";
+}
+
+std::string_view GetParserDataCppTemplate() {
+return R"(//
 // Generated Parser file by stupidcoder cc
 // Date: {{ date }}
 //
@@ -106,4 +196,7 @@ void {{ parser_name_camel }}ParserData::InitProductions(std::vector<common::Prod
 {% for item in parser.arr_productions %}// {{ item.full_text }}
 void {{ parser_name_camel }}ParserData::Reduce{{ item.head_camel_numbered }}(const std::vector<std::unique_ptr<Property>>& props){}
 {% endfor %}
-}  // namespace {{ s_namespace }}
+}  // namespace {{ s_namespace }})";
+}
+
+}

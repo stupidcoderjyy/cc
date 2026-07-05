@@ -99,7 +99,7 @@ private:
     bool warn_conflict_ = true;
 
     static void RenderTemplate(
-            const std::string& template_file, const json& json, const std::string& dst_file);
+            const std::string_view& file_str, const json& json, const std::string& dst_file);
     json BuildJson() const;
     json BuildLexerJson() const;
     json BuildParserJson() const;

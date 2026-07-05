@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.0)
 
-project(cc LANGUAGES CXX)
+project(stupidcoder.cc LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -68,15 +68,8 @@ add_subdirectory(common)
 add_subdirectory(test)
 add_subdirectory(examples)
 
-# 模板
-install(FILES
-        ${CMAKE_SOURCE_DIR}/templates/parser_data.cpp.txt
-        ${CMAKE_SOURCE_DIR}/templates/parser_data.h.txt
-        DESTINATION bin/templates
-)
-
 # 2. 安装可执行文件到 bin/ 子目录
-install(TARGETS ${PROJECT_NAME} cc_core cc_common
+install(TARGETS ${PROJECT_NAME} stupidcoder.cc_core stupidcoder.common
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib      # Linux .so / macOS .dylib
         ARCHIVE DESTINATION lib

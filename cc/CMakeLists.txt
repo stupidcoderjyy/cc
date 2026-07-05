@@ -1,9 +1,9 @@
-﻿set(TARGET cc_core)
+﻿set(TARGET stupidcoder.cc_core)
 
 find_package(inja REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
-add_library(${TARGET}
+add_library(${TARGET} STATIC
         lex/nfa_node.cpp
         lex/nfa.cpp
         lex/nfa_regex_parser.cpp
@@ -18,6 +18,7 @@ add_library(${TARGET}
 )
 target_link_libraries(${TARGET} PRIVATE
         jyy::common
+        jyy::cc_templates
         pantor::inja
         nlohmann_json::nlohmann_json
 )
