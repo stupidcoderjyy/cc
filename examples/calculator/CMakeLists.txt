@@ -7,13 +7,13 @@ set(SRC
 add_executable(${TARGET} ${SRC})
 
 # 步骤3：替换 @TEMPLATE@、@NAMESPACE@、@DEST@、@NAME@，生成 cc.config.json.in
-set(SCRIPT "${CMAKE_BINARY_DIR}/lang.txt")
+set(SCRIPT "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lang.txt")
 set(OUT "${CMAKE_CURRENT_SOURCE_DIR}/gen")
 set(NAMESPACE "cal::gen")
 set(NAME "calculator")
 configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/cc.config.json.in
-        ${CMAKE_BINARY_DIR}/cc.config.json
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cc.config.json
         @ONLY
 )
 
@@ -21,9 +21,9 @@ configure_file(
 add_custom_target(generate_config
         COMMAND ${CMAKE_COMMAND} -E remove ${SCRIPT}
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/lang.txt ${SCRIPT}
-        COMMAND ${CMAKE_BINARY_DIR}/cc ${CMAKE_BINARY_DIR}/cc.config.json --debug
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        DEPENDS cc prepare_templates ${CMAKE_BINARY_DIR}/cc.config.json
+        COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cc ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cc.config.json --debug
+        WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+        DEPENDS cc prepare_templates ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cc.config.json
         COMMENT "Preparing lang.txt and running cc generator"
 )
 

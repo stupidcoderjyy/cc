@@ -50,7 +50,9 @@ foreach(TARGET IN LISTS TARGETS)
             GTest::gtest_main
             stdc++exp
     )
-    gtest_discover_tests(${TARGET})
+    gtest_discover_tests(${TARGET}
+            WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    )
     add_dependencies(${TARGET} format prepare_test_files)
 endforeach()
 
@@ -58,9 +60,6 @@ set(TEMPLATE_DIR ${CMAKE_CURRENT_BINARY_DIR}/templates)
 set(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/lang.txt)
 
 add_custom_target(prepare_test_files
-        COMMAND ${CMAKE_COMMAND} -E remove ${TEMPLATE_DIR}/parser_data.h.txt ${TEMPLATE_DIR}/parser_data.h.txt ${SCRIPT}
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/templates/parser_data.h.txt ${TEMPLATE_DIR}/parser_data.h.txt
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/templates/parser_data.cpp.txt ${TEMPLATE_DIR}/parser_data.cpp.txt
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/examples/calculator/lang.txt ${SCRIPT}
         COMMENT "Copying files to ${TEMPLATE_DIR}"
 )

@@ -9,6 +9,9 @@ set(CMAKE_CXX_FLAGS_RELEAS "-O2 -DNDEBUG")
 
 set(LIB_PREFIX_PATH "C:/msys64/mingw64")
 list(PREPEND CMAKE_PREFIX_PATH ${LIB_PREFIX_PATH})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
@@ -18,6 +21,17 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         stdc++exp
         jyy::cc_core
 )
+
+# 根据构建类型决定是否生成共享库
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(BUILD_SHARED_LIBS ON)
+    # Windows 下自动导出所有符号（CMake 3.4+）
+    if(WIN32)
+        set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    endif()
+else()
+    set(BUILD_SHARED_LIBS OFF)
+endif()
 
 # 代码格式化
 find_program(CLANG_FORMAT
@@ -54,13 +68,25 @@ add_subdirectory(common)
 add_subdirectory(test)
 add_subdirectory(examples)
 
+# 模板
 install(FILES
         ${CMAKE_SOURCE_DIR}/templates/parser_data.cpp.txt
         ${CMAKE_SOURCE_DIR}/templates/parser_data.h.txt
-        DESTINATION bin
+        DESTINATION bin/templates
 )
 
 # 2. 安装可执行文件到 bin/ 子目录
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${PROJECT_NAME} cc_core cc_common
         RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib      # Linux .so / macOS .dylib
+        ARCHIVE DESTINATION lib
+)
+# 头文件
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/cc
+        DESTINATION include/stupidcoder
+        FILES_MATCHING PATTERN "*.h"
+)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/common
+        DESTINATION include/stupidcoder
+        FILES_MATCHING PATTERN "*.h"
 )

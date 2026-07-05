@@ -3,7 +3,7 @@
 find_package(inja REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
-add_library(${TARGET} STATIC
+add_library(${TARGET}
         lex/nfa_node.cpp
         lex/nfa.cpp
         lex/nfa_regex_parser.cpp

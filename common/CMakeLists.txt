@@ -1,6 +1,6 @@
 ﻿set(TARGET cc_common)
 
-add_library(${TARGET} STATIC
+add_library(${TARGET}
         io/abstract_input.cpp
         io/buffered_input.cpp
         io/string_input.cpp

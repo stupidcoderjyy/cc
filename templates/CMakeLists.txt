@@ -1,5 +1,5 @@
 # 定义目标目录
-set(TEMPLATE_DIR ${CMAKE_BINARY_DIR}/templates)
+set(TEMPLATE_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/templates)
 
 # 创建目录
 file(MAKE_DIRECTORY ${TEMPLATE_DIR})
