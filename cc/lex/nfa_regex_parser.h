@@ -8,7 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "cc_constants.h"
+#include "compile/cc_constants.h"
 #include "io/abstract_input.h"
 #include "nfa.h"
 

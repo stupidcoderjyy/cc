@@ -7,7 +7,7 @@
 
 #include <unordered_map>
 
-#include "cc_constants.h"
+#include "compile/cc_constants.h"
 #include "lex/nfa_regex_parser.h"
 
 namespace cc {

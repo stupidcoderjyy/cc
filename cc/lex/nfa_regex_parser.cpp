@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <utility>
 
-#include "cc_constants.h"
+#include "compile/cc_constants.h"
 #include "io/string_input.h"
 
 namespace cc {

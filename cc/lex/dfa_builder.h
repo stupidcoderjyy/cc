@@ -10,7 +10,7 @@
 #include <optional>
 #include <utility>
 
-#include "cc_constants.h"
+#include "compile/cc_constants.h"
 #include "dfa_setter.h"
 #include "util/bitset_hash.h"
 
