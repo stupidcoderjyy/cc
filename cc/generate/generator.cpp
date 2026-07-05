@@ -327,7 +327,7 @@ std::string Generator::ToCamelCase(const std::string& text) {
                 oss << static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
                 capitalizeNext = false;
             } else {
-                oss << ch;  // 原样保留小写字母或数字
+                oss << static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));  // 原样保留小写字母或数字
             }
         }
     }

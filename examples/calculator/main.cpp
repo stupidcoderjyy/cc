@@ -31,7 +31,7 @@ struct CaculatorParserData : cal::gen::CalculatorParserData {
     CaculatorParserData(): CalculatorParserData() {}
 protected:
     // ROOT → expr
-    void ReduceROOT(const std::vector<std::unique_ptr<Property>>& props) override {
+    void ReduceRoot(const std::vector<std::unique_ptr<Property>>& props) override {
         std::cout << stack_.top() << std::endl;
     }
     // expr → expr '+' expr

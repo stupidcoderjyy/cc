@@ -2,4 +2,3 @@ cmake-build-*
 .idea
 obsidian/.obsidian
 prompt/temp.txt
-examples/calculator/gen
