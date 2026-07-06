@@ -23,7 +23,6 @@ using common::LexerDataSupplier;
 using common::Parser;
 using common::ParserDataSupplier;
 using common::Production;
-using common::Property;
 using common::Symbol;
 using common::TokenEof;
 using common::TokenSingle;
@@ -122,8 +121,8 @@ public:
 
     void InitProductions(std::vector<Production>& prods) override {
         prods.resize(2);
-        prods[0] = Production{0, {false, 0}, {{false, 1}}};
-        prods[1] = Production{1, {false, 1}, {{true, 1}}};
+        prods[0] = Production{{false, 0}, {{false, 1}}};
+        prods[1] = Production{{false, 1}, {{true, 1}}};
     }
 };
 

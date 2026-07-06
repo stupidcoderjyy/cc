@@ -2,8 +2,8 @@
 // Created by PC on 2026/7/6.
 //
 
-#ifndef STUPIDCODER_CC_EMBEDDED_TEMPLATES_H
-#define STUPIDCODER_CC_EMBEDDED_TEMPLATES_H
+#ifndef CC_EMBEDDED_TEMPLATES_H
+#define CC_EMBEDDED_TEMPLATES_H
 #include <string_view>
 
 namespace cc::embed {

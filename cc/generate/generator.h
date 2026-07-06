@@ -7,7 +7,6 @@
 
 #include <memory>
 #include <nlohmann/json.hpp>
-#include <sstream>
 
 #include "lex/dfa_setter.h"
 #include "syntax/language_setter.h"

@@ -1,0 +1,13 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# 查找外部依赖（与你的 find_package 一致）
+find_dependency(inja REQUIRED)
+find_dependency(nlohmann_json REQUIRED)
+
+# 包含导出的目标文件
+include("${CMAKE_CURRENT_LIST_DIR}/stupidcoderTargets.cmake")
+
+# 设置版本信息
+set(STUPIDCODER_VERSION @PROJECT_VERSION@)

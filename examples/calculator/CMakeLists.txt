@@ -39,4 +39,4 @@ add_executable(${TARGET} main.cpp ${GENERATED_FILES})
 target_include_directories(${TARGET} PRIVATE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 # 链接库
-target_link_libraries(${TARGET} jyy::common)
+target_link_libraries(${TARGET} stupidcoder::common)

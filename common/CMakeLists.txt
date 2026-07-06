@@ -1,4 +1,4 @@
-﻿set(TARGET stupidcoder.common)
+﻿set(TARGET common)
 
 add_library(${TARGET}
         io/abstract_input.cpp
@@ -13,5 +13,8 @@ add_library(${TARGET}
         util/print_util.cpp
         util/print_util.h
 )
-add_library(jyy::common ALIAS ${TARGET})
-target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(stupidcoder::common ALIAS ${TARGET})
+target_include_directories(common PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include/stupidcoder/common>
+)

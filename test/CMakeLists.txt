@@ -45,8 +45,8 @@ add_executable(cc_test_all
 set(TARGETS cc_test_common cc_test_lex cc_test_syntax cc_test_generate cc_test_all)
 foreach(TARGET IN LISTS TARGETS)
     target_link_libraries(${TARGET} PRIVATE
-            jyy::cc_core
-            jyy::common
+            stupidcoder::cc_core
+            stupidcoder::common
             GTest::gtest_main
             stdc++exp
     )

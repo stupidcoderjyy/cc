@@ -1,4 +1,4 @@
-﻿set(TARGET stupidcoder.cc_core)
+﻿set(TARGET cc_core)
 
 add_library(${TARGET} STATIC
         lex/nfa_node.cpp
@@ -12,14 +12,15 @@ add_library(${TARGET} STATIC
         syntax/lalr_parser.cpp
         generate/script_parser_data.cpp
         generate/generator.cpp
+        generate/embedded_templates.cpp
 )
 target_link_libraries(${TARGET} PRIVATE
-        jyy::common
-        jyy::cc_templates
+        stupidcoder::common
         pantor::inja
         nlohmann_json::nlohmann_json
 )
-add_library(jyy::cc_core ALIAS ${TARGET})
-target_include_directories(${TARGET} PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+add_library(stupidcoder::cc_core ALIAS ${TARGET})
+target_include_directories(cc_core PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include/stupidcoder/cc>  # 安装后的相对路径
 )
