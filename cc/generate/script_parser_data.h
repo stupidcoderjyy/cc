@@ -98,11 +98,6 @@ struct TokenBlockEnd : Token {
     int Type() override;
 };
 
-// ==================== Property ====================
-
-using common::Property;
-using common::PropertyTerminal;
-
 // ==================== Parser Data ====================
 
 class ScriptParserData : public common::ParserDataSupplier {
@@ -134,45 +129,45 @@ private:
     const std::string epsilon_string_name_{'\000'};
 
     //root → script
-    // void ReduceRoot(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceRoot(const std::vector<std::unique_ptr<Token>>& props);
     //script → @token_begin tokens @block_end @syntax_begin syntax @block_end
     void ReduceScript() const;
     // tokens → token
-    // void ReduceTokens0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceTokens0(const std::vector<std::unique_ptr<Token>>& props);
     // tokens → tokens token
-    // void ReduceTokens1(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceTokens1(const std::vector<std::unique_ptr<Token>>& props);
     // token → @id ':' @string ';'
-    void ReduceToken(const std::vector<std::unique_ptr<Property>>& props) const;
+    void ReduceToken(const std::vector<std::unique_ptr<Token>>& props) const;
     // syntax → prod
-    // void ReduceSyntax0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSyntax0(const std::vector<std::unique_ptr<Token>>& props);
     // syntax → syntax prod
-    // void ReduceSyntax1(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSyntax1(const std::vector<std::unique_ptr<Token>>& props);
     // prod → @id ':' body ';'
-    void ReduceProd(const std::vector<std::unique_ptr<Property>>& props);
+    void ReduceProd(const std::vector<std::unique_ptr<Token>>& props);
     // body → slice
-    // void ReduceBody0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceBody0(const std::vector<std::unique_ptr<Token>>& props);
     // body → body '|' slice
-    // void ReduceBody1(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceBody1(const std::vector<std::unique_ptr<Token>>& props);
     // slice → seq prod_priority
     void ReduceSlice();
     // prod_priority → @~
-    // void ReduceProdPriority0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceProdPriority0(const std::vector<std::unique_ptr<Token>>& props);
     // prod_priority → @prod_mark
-    void ReduceProdPriority1(const std::vector<std::unique_ptr<Property>>& props);
+    void ReduceProdPriority1(const std::vector<std::unique_ptr<Token>>& props);
     // seq → symbol
-    // void ReduceSeq0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSeq0(const std::vector<std::unique_ptr<Token>>& props);
     // seq → seq symbol
-    // void ReduceSeq1(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSeq1(const std::vector<std::unique_ptr<Token>>& props);
     // symbol -> atom symb_priority
-    // void ReduceSymbol(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSymbol(const std::vector<std::unique_ptr<Token>>& props);
     // atom -> @terminal
-    void ReduceAtom0(const std::vector<std::unique_ptr<Property>>& props);
+    void ReduceAtom0(const std::vector<std::unique_ptr<Token>>& props);
     // atom -> @id
-    void ReduceAtom1(const std::vector<std::unique_ptr<Property>>& props);
+    void ReduceAtom1(const std::vector<std::unique_ptr<Token>>& props);
     // symb_priority → @~
-    // void ReduceSymbPriority0(const std::vector<std::unique_ptr<Property>>& props);
+    // void ReduceSymbPriority0(const std::vector<std::unique_ptr<Token>>& props);
     // symb_priority → @symb_mark
-    void ReduceSymbPriority1(const std::vector<std::unique_ptr<Property>>& props);
+    void ReduceSymbPriority1(const std::vector<std::unique_ptr<Token>>& props);
 };
 
 }  // namespace cc::gen

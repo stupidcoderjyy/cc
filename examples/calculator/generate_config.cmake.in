@@ -1,0 +1,15 @@
+# generate_config.cmake.in
+# 此脚本在构建时执行，用于生成 cc.config.json
+
+set(SCRIPT "@SCRIPT@")
+set(OUT "@OUT@")
+set(NAMESPACE "@NAMESPACE@")
+set(NAME "@NAME@")
+set(CMAKE_CURRENT_SOURCE_DIR "@CMAKE_CURRENT_SOURCE_DIR@")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "@CMAKE_RUNTIME_OUTPUT_DIRECTORY@")
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cc.config.json.in
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cc.config.json
+    @ONLY
+)

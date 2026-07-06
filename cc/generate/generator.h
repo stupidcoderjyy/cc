@@ -107,7 +107,7 @@ private:
     static std::string ToUpperCase(const std::string& text);
     static std::string CurrentTimeString();
     std::string FormatSymbolInitExpr(const std::string& s) const;
-    std::string FormatProductionInitExpr(int id, const ProductionInfo& pi) const;
+    std::string FormatProductionInitExpr(const ProductionInfo &pi) const;
 };
 
 }  // namespace gen

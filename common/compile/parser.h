@@ -18,31 +18,14 @@ struct Symbol final {
 };
 
 struct Production final {
-    int id;
     Symbol head;
     std::vector<Symbol> body;
-};
-
-struct PropertyTerminal;
-
-struct Property {
-    virtual ~Property() = default;
-    template <class T>
-    T* Cast() {
-        static_assert(std::is_base_of_v<Property, T>, "T must be a subclass of Property");
-        return dynamic_cast<T*>(this);
-    }
-};
-
-struct PropertyTerminal : Property {
-    explicit PropertyTerminal(std::unique_ptr<Token> token) : token(std::move(token)) {}
-    std::unique_ptr<Token> token;
 };
 
 class CompilerInput;
 class Lexer;
 
-typedef std::function<void(const std::vector<std::unique_ptr<Property>>&)> ReduceFunc;
+typedef std::function<void(const std::vector<std::unique_ptr<Token>>&)> ReduceFunc;
 
 struct ParserDataSupplier {
     virtual int TokenMappersCount() const = 0;

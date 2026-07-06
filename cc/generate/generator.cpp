@@ -243,8 +243,7 @@ json Generator::BuildParserJson() const {
         auto& [a, b] = head_to_prod_count[p.head];
         b = ++a;
     }
-    for (int i = 0; i < parser.productions.size(); ++i) {
-        const auto& p = parser.productions[i];
+    for (const auto & p : parser.productions) {
         auto camel = ToCamelCase(p.head);
         auto camel_numbered = camel;
         if (auto& [a, b] = head_to_prod_count[p.head]; b > 1) {
@@ -255,7 +254,7 @@ json Generator::BuildParserJson() const {
                 {"full_text", p.full_text},
                 {"head_camel", camel},
                 {"head_camel_numbered", camel_numbered},
-                {"prod_init_expr", FormatProductionInitExpr(i, p)},
+                {"prod_init_expr", FormatProductionInitExpr(p)},
         });
     }
 
@@ -357,9 +356,9 @@ std::string Generator::FormatSymbolInitExpr(const std::string& s) const {
     return std::format("{{ {}, {} }}", accepted, id);
 }
 
-std::string Generator::FormatProductionInitExpr(int id, const ProductionInfo& pi) const {
+std::string Generator::FormatProductionInitExpr(const ProductionInfo &pi) const {
     std::ostringstream oss;
-    oss << "{ " << id << ", " << FormatSymbolInitExpr(pi.head) << ", {";
+    oss << "{" << FormatSymbolInitExpr(pi.head) << ", {";
     for (const auto& body : pi.body) {
         oss << FormatSymbolInitExpr(body) << ", ";
     }

@@ -35,7 +35,7 @@ BEGIN:
     int extraLoadedBytes = 0;
     while (ci.Available()) {
         int b = ci.Read();
-        if (b < 0) {
+        if (b < 0 || b > kMaxChars) {
             try {
                 ci.Retract();
                 ci.ReadUtf();

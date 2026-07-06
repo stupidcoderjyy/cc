@@ -54,13 +54,9 @@ using common::TokenSingle;
 
 {% for item in lexer.tokens %}struct Token{{ item.name_camel }} : Token {
     int Type() override;
-};{% endfor %}
+};
 
-// ==================== Property ====================
-
-using common::Property;
-using common::PropertyTerminal;
-
+{% endfor -%}
 // ==================== Parser Data ====================
 
 class {{ parser_name_camel }}ParserData : public common::ParserDataSupplier {
@@ -74,11 +70,11 @@ public:
     void InitGoto(std::vector<std::vector<int>>& vec) override;
     void InitActions(std::vector<std::vector<int>>& vec) override;
     void InitTokenToSymbol(std::vector<int>& vec) override;
-    void InitProductions(std::vector<common::Production>& productions) override;
+    void InitProductions(std::vector<common::Production>& prods) override;
 
 protected:
 {% for item in parser.arr_productions %}    // {{ item.full_text }}
-    virtual void Reduce{{ item.head_camel_numbered }}(const std::vector<std::unique_ptr<Property>>& props);
+    virtual void Reduce{{ item.head_camel_numbered }}(const std::vector<std::unique_ptr<Token>>& props);
 {% endfor -%}
 };
 
@@ -102,6 +98,7 @@ namespace {{ s_namespace }} {
 {% for item in lexer.tokens %}int Token{{ item.name_camel }}::Type() {
     return kToken{{ item.name_camel }};
 }
+
 {% endfor -%}
 
 // ==================== Lexer Data ====================
@@ -124,16 +121,8 @@ void {{ parser_name_camel }}LexerData::InitAccepted(std::vector<bool>& vec) {
 }
 
 void {{ parser_name_camel }}LexerData::InitGoto(std::vector<std::vector<int>>& vec) {
-    // 三元组：{当前状态, 输入类, 目标状态}
-    struct Trans {
-        int s, c, t;
-    };
-    std::vector<Trans> trans = {
-{% for item in lexer.arr_goto %}            { {{ item.i1 }}, {{ item.i2 }}, {{ item.v }} },
-{% endfor %}    };
-    for (const auto& t : trans) {
-        vec[t.s][t.c] = t.t;
-    }
+{% for item in lexer.arr_goto %}    vec[{{ item.i1 }}][{{ item.i2 }}] = {{ item.v }};
+{% endfor -%}
 }
 
 void {{ parser_name_camel }}LexerData::InitCharToClass(std::vector<int>& vec) {
@@ -194,7 +183,7 @@ void {{ parser_name_camel }}ParserData::InitProductions(std::vector<common::Prod
 }
 
 {% for item in parser.arr_productions %}// {{ item.full_text }}
-void {{ parser_name_camel }}ParserData::Reduce{{ item.head_camel_numbered }}(const std::vector<std::unique_ptr<Property>>& props){}
+void {{ parser_name_camel }}ParserData::Reduce{{ item.head_camel_numbered }}(const std::vector<std::unique_ptr<Token>>& props){}
 {% endfor %}
 }  // namespace {{ s_namespace }})";
 }

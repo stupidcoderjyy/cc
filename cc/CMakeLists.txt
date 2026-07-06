@@ -1,8 +1,5 @@
 ﻿set(TARGET stupidcoder.cc_core)
 
-find_package(inja REQUIRED)
-find_package(nlohmann_json REQUIRED)
-
 add_library(${TARGET} STATIC
         lex/nfa_node.cpp
         lex/nfa.cpp

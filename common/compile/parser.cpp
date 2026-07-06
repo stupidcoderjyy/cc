@@ -27,7 +27,7 @@ void Parser::Parse(Lexer& lexer, CompilerInput& ci) {
     ci.Skip('\r', '\n', ' ');
     ci.Mark();
     std::vector<int> states;
-    std::vector<std::unique_ptr<Property>> properties;
+    std::vector<std::unique_ptr<Token>> properties;
     states.push_back(0);
     auto token = lexer.NextToken(ci);
     if (token && token->Type() == 0) {
@@ -45,12 +45,11 @@ void Parser::Parse(Lexer& lexer, CompilerInput& ci) {
                 return;
             }
             case kActionAccept: {
-                std::vector<std::unique_ptr<Property>> body;
+                std::vector<std::unique_ptr<Token>> body;
                 body.push_back(std::move(properties.back()));
                 properties.pop_back();
                 try {
-                    auto& p = productions_[0];
-                    if (auto& f = reduce_actions_[p.id]) {
+                    if (auto& f = reduce_actions_[0]) {
                         f(body);
                     }
                 } catch (std::exception& err) {
@@ -62,13 +61,13 @@ void Parser::Parse(Lexer& lexer, CompilerInput& ci) {
             case kActionShift: {
                 ci.Mark();
                 states.push_back(target);
-                properties.push_back(std::make_unique<PropertyTerminal>(std::move(token)));
+                properties.push_back(std::move(token));
                 token = lexer.NextToken(ci);
                 break;
             }
             case kActionReduce: {
                 auto& p = productions_[target];
-                std::vector<std::unique_ptr<Property>> body(p.body.size());
+                std::vector<std::unique_ptr<Token>> body(p.body.size());
                 for (int i = static_cast<int>(p.body.size()) - 1; i >= 0; i--) {
                     auto& [is_terminal, id] = p.body[i];
                     if (id < 0) {
@@ -83,14 +82,14 @@ void Parser::Parse(Lexer& lexer, CompilerInput& ci) {
                     }
                 }
                 try {
-                    if (auto& f = reduce_actions_[p.id]) {
+                    if (auto& f = reduce_actions_[target]) {
                         f(body);
                     }
                 } catch (std::exception& err) {
                     ci.Recover(false);
                     throw ci.ErrorAtMark(err.what());
                 }
-                properties.push_back(std::make_unique<Property>());
+                properties.push_back({});
                 states.push_back(goto_[states.back()][p.head.id]);
                 break;
             }
