@@ -103,7 +103,8 @@ struct TokenBlockEnd : Token {
 class ScriptParserData : public common::ParserDataSupplier {
 public:
     explicit ScriptParserData(const std::optional<DFASetter*>& dfa_setter = std::nullopt,
-            const std::optional<LanguageSetter*>& lang_setter = std::nullopt, bool print_debug_info = false);
+            const std::optional<LanguageSetter*>& lang_setter = std::nullopt,
+            bool print_debug_info = false);
 
     int TokenMappersCount() const override;
     int NonTerminalSymbolsCount() const override;

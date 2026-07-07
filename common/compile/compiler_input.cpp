@@ -21,16 +21,19 @@ CompilerInput::CompilerInput(
 
 std::unique_ptr<CompilerInput> CompilerInput::FromString(
         const std::string& utf8_data, const std::string& name, int buffer_size) {
-    return std::make_unique<CompilerInput>(StreamByteReader::FromString(utf8_data), name, buffer_size);
+    return std::make_unique<CompilerInput>(
+            StreamByteReader::FromString(utf8_data), name, buffer_size);
 }
 
 std::unique_ptr<CompilerInput> CompilerInput::FromFile(
         const std::string& file_path, int buffer_size) {
-    return std::make_unique<CompilerInput>(StreamByteReader::FromFile(file_path), file_path, buffer_size);
+    return std::make_unique<CompilerInput>(
+            StreamByteReader::FromFile(file_path), file_path, buffer_size);
 }
 
 std::unique_ptr<CompilerInput> CompilerInput::FromConsole(int buffer_size) {
-    return std::make_unique<CompilerInput>(StreamByteReader::FromConsole(), "std::cin", buffer_size);
+    return std::make_unique<CompilerInput>(
+            StreamByteReader::FromConsole(), "std::cin", buffer_size);
 }
 
 CompilerInput::~CompilerInput() {

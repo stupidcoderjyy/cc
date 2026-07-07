@@ -84,7 +84,7 @@ protected:
 }
 
 std::string_view GetParserDataCppTemplate() {
-return R"(//
+    return R"(//
 // Generated Parser file by stupidcoder cc
 // Date: {{ date }}
 //
@@ -188,4 +188,4 @@ void {{ parser_name_camel }}ParserData::Reduce{{ item.head_camel_numbered }}(con
 }  // namespace {{ s_namespace }})";
 }
 
-}
+}  // namespace cc::embed

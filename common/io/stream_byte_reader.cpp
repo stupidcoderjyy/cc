@@ -4,12 +4,12 @@
 
 #include "stream_byte_reader.h"
 
-#include <stdexcept>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <istream>
 #include <sstream>
+#include <stdexcept>
 
 #include "console_byte_reader.h"
 
@@ -18,13 +18,14 @@ namespace common {
 // ---------- 构造函数 ----------
 StreamByteReader::StreamByteReader(std::istream& stream) : stream_(stream) {}
 
-StreamByteReader::StreamByteReader(std::unique_ptr<std::istream> stream): stream_(*stream), owned_stream_(std::move(stream)) {}
+StreamByteReader::StreamByteReader(std::unique_ptr<std::istream> stream)
+    : stream_(*stream), owned_stream_(std::move(stream)) {}
 
-std::unique_ptr<StreamByteReader> StreamByteReader::FromString(const std::string &str) {
+std::unique_ptr<StreamByteReader> StreamByteReader::FromString(const std::string& str) {
     return std::make_unique<StreamByteReader>(std::make_unique<std::istringstream>(str));
 }
 
-std::unique_ptr<StreamByteReader> StreamByteReader::FromFile(const std::string &path) {
+std::unique_ptr<StreamByteReader> StreamByteReader::FromFile(const std::string& path) {
     auto ifs = std::make_unique<std::ifstream>(path, std::ios::binary);
     if (!ifs->is_open()) {
         throw std::runtime_error("StreamByteReader::FromFile: cannot open file: " + path);

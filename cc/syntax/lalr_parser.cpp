@@ -611,18 +611,18 @@ using common::print::Align;
 using common::print::Begin;
 using common::print::End;
 using common::print::kBgBlue;
+using common::print::kBgDefault;
 using common::print::kBgPurple;
+using common::print::kBgRed;
 using common::print::kBgWhite;
 using common::print::kBgYellow;
-using common::print::kBgDefault;
-using common::print::kBgRed;
 using common::print::kFgBlack;
 using common::print::kFgBlue;
+using common::print::kFgDefault;
 using common::print::kFgGreen;
 using common::print::kFgPurple;
-using common::print::kFgDefault;
-using common::print::kFgYellow;
 using common::print::kFgRed;
+using common::print::kFgYellow;
 using common::print::kStyleDefault;
 using common::print::kStyleReverse;
 using common::print::PadStyled;
@@ -633,7 +633,7 @@ void LALRBuilder::WarnConflictSR(
     bool handled = action.type != ActionType::kUndefined;
     std::cerr << Styled("S-R CONFLICT", kFgBlack, handled ? kBgYellow : kBgRed) << '\n';
     Begin(std::cerr, handled ? kFgYellow : kFgRed);
-    std::cerr << "prod: "<< ItemString(state, item) << '\n';
+    std::cerr << "prod: " << ItemString(state, item) << '\n';
     std::cerr << "forward:" << forward.ToString() << '\n';
     std::cerr << action.ToString();
     End(std::cerr);
@@ -647,7 +647,8 @@ void LALRBuilder::WarnConflictRR(const Production& pre,
     bool handled = action.type != ActionType::kUndefined;
     std::cerr << Styled("R-R CONFLICT", kFgBlack, handled ? kBgYellow : kBgRed) << '\n';
     Begin(std::cerr, handled ? kFgYellow : kFgRed);
-    std::cerr << "prod1:" << syntax_->productions()[pre.id].ToString() << '\n';  // 可调用toString或打印id
+    std::cerr << "prod1:" << syntax_->productions()[pre.id].ToString()
+              << '\n';  // 可调用toString或打印id
     std::cerr << "prod2:" << syntax_->productions()[cur.id].ToString() << '\n';
     std::cerr << "forward: " << forward.ToString() << '\n';
     std::cerr << action.ToString();

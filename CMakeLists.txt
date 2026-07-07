@@ -48,9 +48,13 @@ endif()
 
 if(CLANG_FORMAT)
     file(GLOB_RECURSE ALL_SOURCE_FILES
-            "${PROJECT_SOURCE_DIR}/src/*.cpp"
-            "${PROJECT_SOURCE_DIR}/src/*.h"
+            "${PROJECT_SOURCE_DIR}/cc/*.cpp"
+            "${PROJECT_SOURCE_DIR}/cc/*.h"
+            "${PROJECT_SOURCE_DIR}/common/*.cpp"
+            "${PROJECT_SOURCE_DIR}/common/*.h"
             "${PROJECT_SOURCE_DIR}/test/*.cpp"
+            "${PROJECT_SOURCE_DIR}/examples/*.h"
+            "${PROJECT_SOURCE_DIR}/examples/*.cpp"
     )
     add_custom_target(format
             COMMAND ${CLANG_FORMAT} -i -style=file ${ALL_SOURCE_FILES}

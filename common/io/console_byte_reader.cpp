@@ -8,10 +8,9 @@
 
 namespace common {
 
-ConsoleByteReader::ConsoleByteReader(): StreamByteReader(std::cin) {
-}
+ConsoleByteReader::ConsoleByteReader() : StreamByteReader(std::cin) {}
 
-int ConsoleByteReader::Read(char *dest, int start, int length) {
+int ConsoleByteReader::Read(char* dest, int start, int length) {
     if (dest == nullptr || start < 0 || length <= 0) {
         return 0;
     }
@@ -28,4 +27,4 @@ int ConsoleByteReader::Read(char *dest, int start, int length) {
     return count;
 }
 
-}
+}  // namespace common

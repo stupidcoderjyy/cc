@@ -8,12 +8,12 @@
 #include <iostream>
 
 #include "compile/compiler_input.h"
+#include "embedded_templates.h"
 #include "lex/dfa_builder.h"
 #include "lex/nfa_regex_parser.h"
 #include "script_parser_data.h"
 #include "syntax/lalr_parser.h"
 #include "util/print_util.h"
-#include "embedded_templates.h"
 
 namespace cc::gen {
 
@@ -142,9 +142,9 @@ void Generator::RenderTemplate(
     // 1. 创建 Inja 环境
     inja::Environment env;
     using std::filesystem::create_directories;
+    using std::filesystem::current_path;
     using std::filesystem::exists;
     using std::filesystem::path;
-    using std::filesystem::current_path;
 
     std::string rendered = env.render(file_str, json);
 
@@ -243,7 +243,7 @@ json Generator::BuildParserJson() const {
         auto& [a, b] = head_to_prod_count[p.head];
         b = ++a;
     }
-    for (const auto & p : parser.productions) {
+    for (const auto& p : parser.productions) {
         auto camel = ToCamelCase(p.head);
         auto camel_numbered = camel;
         if (auto& [a, b] = head_to_prod_count[p.head]; b > 1) {
@@ -323,7 +323,8 @@ std::string Generator::ToCamelCase(const std::string& text) {
                 oss << static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
                 capitalizeNext = false;
             } else {
-                oss << static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));  // 原样保留小写字母或数字
+                oss << static_cast<char>(
+                        std::tolower(static_cast<unsigned char>(ch)));  // 原样保留小写字母或数字
             }
         }
     }
@@ -356,7 +357,7 @@ std::string Generator::FormatSymbolInitExpr(const std::string& s) const {
     return std::format("{{ {}, {} }}", accepted, id);
 }
 
-std::string Generator::FormatProductionInitExpr(const ProductionInfo &pi) const {
+std::string Generator::FormatProductionInitExpr(const ProductionInfo& pi) const {
     std::ostringstream oss;
     oss << "{" << FormatSymbolInitExpr(pi.head) << ", {";
     for (const auto& body : pi.body) {

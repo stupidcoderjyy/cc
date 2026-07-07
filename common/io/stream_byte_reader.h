@@ -5,8 +5,8 @@
 #ifndef CC_STREAM_BYTE_READER_H
 #define CC_STREAM_BYTE_READER_H
 
-#include <memory>
 #include <istream>
+#include <memory>
 
 #include "byte_reader.h"
 
@@ -36,13 +36,11 @@ public:
 
 protected:
     std::istream& stream_;
+
 private:
     std::unique_ptr<std::istream> owned_stream_;
 };
 
+}  // namespace common
 
-}
-
-
-
-#endif //CC_STREAM_BYTE_READER_H
+#endif  //CC_STREAM_BYTE_READER_H

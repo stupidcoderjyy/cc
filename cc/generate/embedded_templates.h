@@ -11,8 +11,6 @@ namespace cc::embed {
 std::string_view GetParserDataHeaderTemplate();
 std::string_view GetParserDataCppTemplate();
 
-}
+}  // namespace cc::embed
 
-
-
-#endif //STUPIDCODER_CC_EMBEDDED_TEMPLATES_H
+#endif  //STUPIDCODER_CC_EMBEDDED_TEMPLATES_H

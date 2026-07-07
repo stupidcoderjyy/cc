@@ -2,6 +2,7 @@
 
 number: "\d+(\.\d+)?";
 id: "\a\w*";
+constant: "$[A-Z0-9_]+";
 
 %%
 
@@ -18,8 +19,17 @@ expr : expr '+' $1L expr %1L
      | expr '^' $3L expr %3L
      | '-' expr %5
      | '(' expr ')'
+     | @id '(' args ')'
      | @number
      | @id
+     | @constant
+     ;
+
+args : arg
+     | args ',' arg
+     ;
+
+arg  : expr
      ;
 
 %%

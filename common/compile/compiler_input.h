@@ -27,7 +27,7 @@ public:
             int buffer_size = kDefaultBufferSize);
 
     static std::unique_ptr<CompilerInput> FromFile(
-    const std::string& file_path, int buffer_size = kDefaultBufferSize);
+            const std::string& file_path, int buffer_size = kDefaultBufferSize);
 
     static std::unique_ptr<CompilerInput> FromConsole(int buffer_size = kDefaultBufferSize);
 

@@ -495,14 +495,14 @@ void ScriptParserData::InitProductions(std::vector<common::Production>& prods) {
     prods[1] = {{false, 11},
             {{true, 11}, {false, 9}, {true, 10}, {true, 9}, {false, 8},
                     {true, 10}}};  // script → token_begin tokens block_end syntax_begin syntax block_end
-    prods[2] = {{false, 9}, {{false, 4}}};              // tokens → token
-    prods[3] = {{false, 9}, {{false, 9}, {false, 4}}};  // tokens → tokens token
+    prods[2] = {{false, 9}, {{false, 4}}};                                  // tokens → token
+    prods[3] = {{false, 9}, {{false, 9}, {false, 4}}};                      // tokens → tokens token
     prods[4] = {{false, 4}, {{true, 8}, {true, 7}, {true, 6}, {true, 5}}};  // token → id : string ;
-    prods[5] = {{false, 8}, {{false, 7}}};                              // syntax → prod
-    prods[6] = {{false, 8}, {{false, 8}, {false, 7}}};                  // syntax → syntax prod
+    prods[5] = {{false, 8}, {{false, 7}}};                                  // syntax → prod
+    prods[6] = {{false, 8}, {{false, 8}, {false, 7}}};                      // syntax → syntax prod
     prods[7] = {{false, 7}, {{true, 8}, {true, 7}, {false, 2}, {true, 5}}};  // prod → id : body ;
-    prods[8] = {{false, 2}, {{false, 1}}};                               // body → slice
-    prods[9] = {{false, 2}, {{false, 2}, {true, 4}, {false, 1}}};        // body → body | slice
+    prods[8] = {{false, 2}, {{false, 1}}};                                   // body → slice
+    prods[9] = {{false, 2}, {{false, 2}, {true, 4}, {false, 1}}};            // body → body | slice
     prods[10] = {{false, 1}, {{false, 0}, {false, 3}}};   // slice → seq prod_priority
     prods[11] = {{false, 3}, {}};                         // prod_priority → ε
     prods[12] = {{false, 3}, {{true, 3}}};                // prod_priority → prod_mark
@@ -516,7 +516,8 @@ void ScriptParserData::InitProductions(std::vector<common::Production>& prods) {
 }
 
 ScriptParserData::ScriptParserData(const std::optional<DFASetter*>& dfa_setter,
-        const std::optional<LanguageSetter*>& lang_setter, bool print_debug_info)
+        const std::optional<LanguageSetter*>& lang_setter,
+        bool print_debug_info)
     : dfa_setter_(dfa_setter), lang_setter_(lang_setter), print_debug_info_(print_debug_info) {
     parser_ = std::make_unique<NFARegexParser>();
     syntax_ = std::make_unique<Syntax>();

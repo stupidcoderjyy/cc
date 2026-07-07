@@ -33,7 +33,11 @@ add_custom_command(
 )
 
 # 可执行文件，包含生成的源文件
-add_executable(${TARGET} main.cpp ${GENERATED_FILES})
+add_executable(${TARGET}
+        main.cpp
+        calculator_core.cpp
+        ${GENERATED_FILES}
+)
 
 # 包含生成的头文件目录（如果有头文件）
 target_include_directories(${TARGET} PRIVATE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})

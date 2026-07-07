@@ -11,10 +11,8 @@ namespace common {
 class ConsoleByteReader : public StreamByteReader {
 public:
     ConsoleByteReader();
-    int Read(char *dest, int start, int length) override;
+    int Read(char* dest, int start, int length) override;
 };
-}
+}  // namespace common
 
-
-
-#endif //CC_CONSOLE_BYTE_READER_H
+#endif  //CC_CONSOLE_BYTE_READER_H
